@@ -43,11 +43,11 @@ export default function SubmitPage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">
-              Transform Your Dream into Film
+            <h1 className="font-clipartkorea text-3xl md:text-[43px] font-extrabold text-foreground mb-4 text-balance">
+            당신의 꿈을 영화로 만들어보세요
             </h1>
             <p className="text-lg text-muted-foreground text-balance">
-              Share your dream with our AI-powered platform. We'll transform it into a complete film scenario that the community can vote on and enjoy.
+            당신의 꿈을 이야기로 펼쳐 보세요. AI를 통해 당신의 꿈은 현실이 되고, <br/>그 작품은 모두가 감상하고 평가하는 무대에 오릅니다.
             </p>
           </div>
 
@@ -83,53 +83,54 @@ export default function SubmitPage() {
           {step === 'dream' && (
             <Card className="p-8 bg-card border-border space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Describe Your Dream</h2>
-                <p className="text-muted-foreground">Be as detailed as possible. Include colors, emotions, characters, and scenarios.</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">당신의 꿈을 기록해 보세요</h2>
+                <p className="text-muted-foreground">꿈에 담긴 색채, 감정, 인물, 장면들을 가능한 자세히 작성해 주세요.</p>
               </div>
 
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="dream" className="text-foreground font-semibold mb-2 block">
-                    Your Dream Story
+                    오늘 꾼 꿈은...
                   </Label>
                   <Textarea
                     id="dream"
-                    placeholder="I dreamed about a city made of clouds where memories float like butterflies. There was a mysterious figure trying to collect all the golden memories..."
+                    placeholder="나는 하늘 위의 도시에서 친구와 함께 날고 있었다..."
                     value={formData.dreamDescription}
                     onChange={(e) => handleInputChange('dreamDescription', e.target.value)}
                     className="min-h-48 bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
                   />
                   <p className="text-xs text-muted-foreground mt-2">
-                    {formData.dreamDescription.length}/500 characters (minimum 50)
+                    {formData.dreamDescription.length}/500자 (최소 50자 이상)
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="mood" className="text-foreground font-semibold mb-2 block">
-                      Primary Mood
+                      꿈의 분위기는...
                     </Label>
                     <Select value={formData.mood} onValueChange={(value) => handleInputChange('mood', value)}>
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Select mood..." />
+                        <SelectValue placeholder="선택하기..." />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        <SelectItem value="mysterious">Mysterious</SelectItem>
-                        <SelectItem value="joyful">Joyful</SelectItem>
-                        <SelectItem value="haunting">Haunting</SelectItem>
-                        <SelectItem value="adventurous">Adventurous</SelectItem>
-                        <SelectItem value="melancholic">Melancholic</SelectItem>
+                        <SelectItem value="mysterious">신비로운</SelectItem>
+                        <SelectItem value="joyful">흥미로운</SelectItem>
+                        <SelectItem value="surreal">비현실적인</SelectItem>
+                        <SelectItem value="adventurous">모험적인</SelectItem>
+                        <SelectItem value="horror-like">무서운</SelectItem>
+                        <SelectItem value="romantic">로맨틱한</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <Label htmlFor="themes" className="text-foreground font-semibold mb-2 block">
-                      Themes (comma separated)
+                      테마는... (쉼표로 구분)
                     </Label>
                     <Input
                       id="themes"
-                      placeholder="e.g., memories, time travel, mystery"
+                      placeholder="기억, 시간 여행, 미스터리..."
                       value={formData.themes}
                       onChange={(e) => handleInputChange('themes', e.target.value)}
                       className="bg-background border-border"
@@ -141,10 +142,10 @@ export default function SubmitPage() {
               <Button
                 onClick={() => setStep('details')}
                 disabled={!isStep1Valid}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-primary font-light hover:bg-primary/90 text-primary-foreground"
               >
                 <Wand2 className="w-4 h-4 mr-2" />
-                Generate Film Scenario
+                영화 시나리오 생성하기
               </Button>
             </Card>
           )}
@@ -153,18 +154,18 @@ export default function SubmitPage() {
           {step === 'details' && (
             <Card className="p-8 bg-card border-border space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Film Details</h2>
-                <p className="text-muted-foreground">Provide information about your film submission.</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">영화 상세 정보</h2>
+                <p className="text-muted-foreground">영화 상세 정보를 입력해 주세요.</p>
               </div>
 
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="title" className="text-foreground font-semibold mb-2 block">
-                    Film Title
+                    영화 제목
                   </Label>
                   <Input
                     id="title"
-                    placeholder="Give your film a compelling title"
+                    placeholder='하늘의 나라'
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     className="bg-background border-border"
@@ -174,11 +175,11 @@ export default function SubmitPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="genre" className="text-foreground font-semibold mb-2 block">
-                      Genre
+                      장르
                     </Label>
                     <Select value={formData.genre} onValueChange={(value) => handleInputChange('genre', value)}>
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Select genre..." />
+                        <SelectValue placeholder="장르 선택하기..." />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         <SelectItem value="fantasy">Fantasy</SelectItem>
@@ -193,17 +194,17 @@ export default function SubmitPage() {
 
                   <div>
                     <Label htmlFor="audience" className="text-foreground font-semibold mb-2 block">
-                      Target Audience
+                      타겟 관객층
                     </Label>
                     <Select value={formData.targetAudience} onValueChange={(value) => handleInputChange('targetAudience', value)}>
                       <SelectTrigger className="bg-background border-border">
                         <SelectValue placeholder="Select audience..." />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        <SelectItem value="family">Family</SelectItem>
-                        <SelectItem value="teen">Teen</SelectItem>
-                        <SelectItem value="adult">Adult</SelectItem>
-                        <SelectItem value="all">All Ages</SelectItem>
+                        <SelectItem value="all">전체 관람가</SelectItem>
+                        <SelectItem value="teen">12세 이상 관람가</SelectItem>
+                        <SelectItem value="fifteen">15세 이상 관람가</SelectItem>
+                        <SelectItem value="adult">19세 이상 관람가</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -211,11 +212,11 @@ export default function SubmitPage() {
 
                 <div>
                   <Label htmlFor="director" className="text-foreground font-semibold mb-2 block">
-                    Director Name
+                    감독 이름
                   </Label>
                   <Input
                     id="director"
-                    placeholder="Your name (as you'd like it credited)"
+                    placeholder="당신의 이름을 적어주세요"
                     value={formData.director}
                     onChange={(e) => handleInputChange('director', e.target.value)}
                     className="bg-background border-border"
@@ -224,7 +225,7 @@ export default function SubmitPage() {
 
                 <div>
                   <Label htmlFor="email" className="text-foreground font-semibold mb-2 block">
-                    Email Address
+                    Email
                   </Label>
                   <Input
                     id="email"
@@ -243,14 +244,14 @@ export default function SubmitPage() {
                   variant="outline"
                   className="flex-1 border-border hover:bg-card"
                 >
-                  Back
+                  뒤로 가기
                 </Button>
                 <Button
                   onClick={() => setStep('review')}
                   disabled={!isStep2Valid}
                   className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
-                  Review Submission
+                  제출 검토
                 </Button>
               </div>
             </Card>
@@ -260,27 +261,27 @@ export default function SubmitPage() {
           {step === 'review' && (
             <Card className="p-8 bg-card border-border space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Review Your Submission</h2>
-                <p className="text-muted-foreground">Please review your information before submitting.</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">출품작 마지막 점검</h2>
+                <p className="text-muted-foreground">출품하기 전, 입력하신 정보가 맞는지 다시 한 번 확인해주세요.</p>
               </div>
 
               <div className="space-y-6 bg-background rounded-lg p-6">
                 <div className="border-b border-border pb-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">Dream Description</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">꿈 내용</h3>
                   <p className="text-foreground line-clamp-3">{formData.dreamDescription}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">Film Title</h3>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">영화 제목</h3>
                     <p className="text-foreground">{formData.title}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">Genre</h3>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">장르</h3>
                     <p className="text-foreground">{formData.genre}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">Director</h3>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">감독</h3>
                     <p className="text-foreground">{formData.director}</p>
                   </div>
                   <div>
@@ -292,7 +293,7 @@ export default function SubmitPage() {
 
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <p className="text-sm text-blue-400">
-                  Your submission will be reviewed by our admin team within 24 hours. You'll receive an email confirmation once approved.
+                  당신의 제출 내용은 관리자 팀이 24시간 이내에 검토할 예정입니다. 승인 후 확인 이메일이 발송됩니다.
                 </p>
               </div>
 
@@ -302,13 +303,13 @@ export default function SubmitPage() {
                   variant="outline"
                   className="flex-1 border-border hover:bg-card"
                 >
-                  Back
+                  뒤로 가기
                 </Button>
                 <Button
                   onClick={handleSubmit}
                   className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
-                  Submit Dream
+                  출품하기
                 </Button>
               </div>
             </Card>
@@ -316,7 +317,7 @@ export default function SubmitPage() {
 
           {/* Step 4: Success */}
           {step === 'success' && (
-            <Card className="p-8 bg-card border-border text-center space-y-6">
+            <Card className="px-8 py-10 bg-card border-border text-center space-y-6">
               <div className="flex justify-center">
                 <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
                   <CheckCircle className="w-8 h-8 text-green-400" />
@@ -324,22 +325,17 @@ export default function SubmitPage() {
               </div>
 
               <div>
-                <h2 className="text-3xl font-bold text-foreground mb-2">Dream Submitted!</h2>
+                <h2 className="text-3xl font-bold text-foreground mb-4">꿈 출품 완료!</h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  Thank you for submitting your dream. Our AI will transform it into a film scenario, and our admins will review it shortly. You'll receive an email confirmation once approved.
+                  당신의 꿈을 출품해주셔서 감사합니다.<br/>AI가 당신의 꿈을 영화 시나리오로 변환한 뒤 관리자가 검토합니다.<br/>승인 완료되면 이메일이 발송되오니 확인 부탁드립니다.<br/>좋은 결과가 있기를 바랍니다.
                 </p>
-              </div>
-
-              <div className="bg-background rounded-lg p-6 space-y-2 text-left">
-                <p className="text-sm text-muted-foreground">Confirmation sent to:</p>
-                <p className="text-foreground font-semibold">{formData.email}</p>
               </div>
 
               <Button
                 onClick={() => window.location.href = '/explore'}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                Explore Films
+                출품작 보러가기
               </Button>
             </Card>
           )}
