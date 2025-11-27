@@ -10,7 +10,7 @@ export function Hero() {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-2 items-center">
           <div className="space-y-6">
             <h1 className="text-5xl sm:text-6xl font-bold text-balance leading-tight">
               당신의 꿈이
@@ -50,12 +50,9 @@ export function Hero() {
           </div>
 
           <div className="relative">
-            <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl border border-primary/20 overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-24 h-24 bg-primary/30 rounded-full animate-pulse"></div>
-              </div>
+            <div className="aspect-auto bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl overflow-hidden">
               <img
-                src="/film-production-with-ai-elements.jpg"
+                src="/Dreamfilm-festival-hero-image.jpg"
                 alt="DreamFilm Festival showcase"
                 className="w-full h-full object-cover"
               />
