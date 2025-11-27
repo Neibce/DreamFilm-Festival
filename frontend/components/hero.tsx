@@ -11,46 +11,44 @@ export function Hero() {
 
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
           <div className="space-y-6">
-            <div className="inline-block px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
-              <p className="text-primary text-sm font-medium">✨ AI-Powered Filmmaking</p>
-            </div>
-            
             <h1 className="text-5xl sm:text-6xl font-bold text-balance leading-tight">
-              Transform Your <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">Dreams into Cinema</span>
+              당신의 꿈이
+              <br/>
+              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text font-clipartkorea font-bold text-transparent">영화가 되는 순간</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground text-balance leading-relaxed">
-              Submit your wildest dreams. Watch AI transform them into stunning film scenarios. Vote for your favorites and compete for glory.
+            <p className="font-light text-xl text-muted-foreground text-balance leading-relaxed">
+            잠들었던 상상이 스크린 위에서 깨어납니다. <br/> AI가 당신의 꿈을 시나리오로 만들고, 관객과 심사위원이 평가합니다.<br/>
+            <span className="font-bold">세상에 단 하나뿐인 꿈 기반 영화제 플랫폼</span>
+            ,<br/> 이제 당신의 무의식을 작품으로 남겨보세요.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition">
-                Submit Your Dream
+              <button className="px-11 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition">
+                꿈 출품하기
               </button>
-              <button className="px-8 py-3 border border-primary/50 text-primary rounded-lg font-semibold hover:bg-primary/5 transition">
-                Explore Films
+              <button className="px-10 py-3 border border-primary/50 text-primary rounded-lg font-semibold hover:bg-primary/5 transition">
+                작품 감상하기
               </button>
             </div>
 
-            <div className="flex gap-6 text-sm text-muted-foreground pt-4">
+            <div className="flex gap-12 text-sm text-muted-foreground pt-4">
               <div>
                 <p className="font-bold text-accent">2,847+</p>
-                <p>Dreams Submitted</p>
+                <p>출품된 꿈 작품</p>
               </div>
               <div>
                 <p className="font-bold text-accent">1,203</p>
-                <p>Films Created</p>
+                <p>선정 및 상영이 완료된 영화</p>
               </div>
               <div>
                 <p className="font-bold text-accent">15K+</p>
-                <p>Active Community</p>
+                <p>영화제 참여자 수</p>
               </div>
             </div>
           </div>
 
-          {/* Right Visual */}
           <div className="relative">
             <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl border border-primary/20 overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-center">

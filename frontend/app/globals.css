@@ -126,10 +126,23 @@
   }
 }
 
+@layer utilities {
+  .hover-glow {
+    @apply transition-all duration-300 hover:scale-[1.02];
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 30px oklch(0.65 0.3 290 / 0.3);
+  }
+  .dark .hover-glow:hover {
+    box-shadow: 0 0 30px oklch(0.985 0 0 / 0.3);
+  }
+}
+
 .font-clipartkorea {
   font-family: var(--font-clipartkorea), sans-serif;
 }
 
+/* font weight */
 .font-thin {
   font-weight: 100;
 }

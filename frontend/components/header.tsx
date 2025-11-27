@@ -15,32 +15,35 @@ export function Header() {
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-lg">DF</span>
             </div>
-            <span className="font-bold text-xl text-foreground hidden sm:inline">DreamFilm</span>
+            <div className="flex flex-col leading-none ml-1">
+              <span className="font-bold text-[14px] text-foreground hidden sm:inline">2025년 제13회</span>
+              <span className="font-bold text-xl text-foreground hidden sm:inline">Dream Film Festival</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-10">
             <Link href="/explore" className="text-muted-foreground hover:text-foreground transition">
-              Explore Films
+              상영작 목록
             </Link>
             <Link href="/submit" className="text-muted-foreground hover:text-foreground transition">
-              Submit Dream
+              출품작 제출
             </Link>
             <Link href="/judge" className="text-muted-foreground hover:text-foreground transition">
-              Judge Films
+              상영작 평가
             </Link>
           </div>
 
           {/* CTA Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             <button className="px-6 py-2 text-foreground hover:text-primary transition">
-              Sign In
+              Sign Up
             </button>
             <Link 
               href="/submit"
               className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
             >
-              Get Started
+              Sign In
             </Link>
           </div>
 
