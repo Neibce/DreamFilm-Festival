@@ -94,7 +94,7 @@ export default function SubmitPage() {
                   </Label>
                   <Textarea
                     id="dream"
-                    placeholder="나는 하늘 위의 도시에서 친구와 함께 날고 있었다..."
+                    placeholder="ex) 나는 하늘 위의 도시에서 친구와 함께 날고 있었다..."
                     value={formData.dreamDescription}
                     onChange={(e) => handleInputChange('dreamDescription', e.target.value)}
                     className="min-h-48 bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
@@ -111,7 +111,7 @@ export default function SubmitPage() {
                     </Label>
                     <Select value={formData.mood} onValueChange={(value) => handleInputChange('mood', value)}>
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="선택하기..." />
+                        <SelectValue placeholder="분위기 선택" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         <SelectItem value="mysterious">신비로운</SelectItem>
@@ -130,7 +130,7 @@ export default function SubmitPage() {
                     </Label>
                     <Input
                       id="themes"
-                      placeholder="기억, 시간 여행, 미스터리..."
+                      placeholder="ex) 기억, 시간 여행, 미스터리..."
                       value={formData.themes}
                       onChange={(e) => handleInputChange('themes', e.target.value)}
                       className="bg-background border-border"
@@ -165,7 +165,7 @@ export default function SubmitPage() {
                   </Label>
                   <Input
                     id="title"
-                    placeholder='하늘의 나라'
+                    placeholder='ex) 하늘의 나라'
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     className="bg-background border-border"
@@ -194,11 +194,11 @@ export default function SubmitPage() {
 
                   <div>
                     <Label htmlFor="audience" className="text-foreground font-semibold mb-2 block">
-                      타겟 관객층
+                      권장 관람 연령
                     </Label>
                     <Select value={formData.targetAudience} onValueChange={(value) => handleInputChange('targetAudience', value)}>
                       <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="Select audience..." />
+                        <SelectValue placeholder="관람 등급 선택" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         <SelectItem value="all">전체 관람가</SelectItem>
