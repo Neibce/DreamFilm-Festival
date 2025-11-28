@@ -40,7 +40,7 @@ export function Features() {
         <div className="text-center mb-16">
           <h2 className="text-4xl sm:text-5xl font-extrabold mb-4">주요 기능</h2>
           <p className="text-xl text-muted-foreground text-balance">
-            꿈 속에서만 존재하던 세계가 현실로 다가오다
+            아래 기능을 통해 꿈 속에서만 존재하던 세계가 현실로 다가옵니다.
           </p>
         </div>
 

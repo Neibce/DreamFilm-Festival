@@ -15,9 +15,9 @@ export function Process() {
     <section id="process" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">How It Works</h2>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4">영화제 진행 과정</h2>
           <p className="text-xl text-muted-foreground">
-            From dream to screen in six simple steps
+            작은 꿈에서 엄청난 작품이 될 때까지 일곱 단계를 거칩니다.
           </p>
         </div>
 

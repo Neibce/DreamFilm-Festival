@@ -6,8 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useState } from 'react'
-import { Star, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Star, CheckCircle, CircleEllipsis, Clock } from 'lucide-react'
+
+type FilmScore = {
+  creativity: number
+  execution: number
+  emotional_impact: number
+  storytelling: number
+}
 
 interface JudgingFilm {
   id: string
@@ -15,44 +22,55 @@ interface JudgingFilm {
   director: string
   genre: string
   image: string
-  dreamConcept: string
-  status: 'pending' | 'scored' | 'rejected'
-  scores?: {
-    creativity: number
-    execution: number
-    emotional_impact: number
-    storytelling: number
-  }
+  dreamDescription: string
+  status: '심사 대기' | '심사 완료'
+  scores?: FilmScore
 }
 
 const MOCK_JUDGING_FILMS: JudgingFilm[] = [
   {
     id: '1',
-    title: 'The Midnight Garden',
-    director: 'Sarah Chen',
-    genre: 'Fantasy Drama',
+    title: '하늘을 나는 도시',
+    director: '김윤영',
+    genre: '판타지',
     image: '/fantasy-film-poster.jpg',
-    dreamConcept: 'A surreal garden that exists between dreams and reality',
-    status: 'pending'
+    dreamDescription: 
+      `처음에는 아무도 눈치 채지 못했다. 새벽녘, 도시의 가장 깊은 곳에서 마치 거대한 심장이 뛰는 듯한 진동이 울리기 시작했다. 건물의 벽이 미세하게 흔들리고, 가로등 불빛이 떨렸다.
+      사람들은 지진이라 생각해 바닥을 살폈지만, 흔들리는 것은 땅이 아니라 도시 전체였다. 
+      잠시 뒤, 소리가 완전히 멈추자 믿기 어려운 일이 일어났다.
+      도시가 땅에서 떨어지기 시작했다.
+
+      바퀴도, 추진 장치도 보이지 않았다. 마치 보이지 않는 손이 도시를 통째로 들어 올리는 것처럼, 아파트 단지, 고층 빌딩, 공원, 도로, 자동차—모든 것이 그대로 들려 올랐다.
+      창밖으로 내려다본 땅은 점점 멀어졌고, 사람들의 비명과 환호가 뒤섞였다. 누군가는 울부짖었고, 누군가는 감탄하며 스마트폰을 꺼내 들었다. 하지만 와이파이는 이미 끊긴 지 오래였다.
+
+      도시가 구름에 닿는 순간, 놀라운 변화가 시작됐다.
+      구름은 마치 단단한 바닥처럼 도시 아래로 밀려들어와 하얀 해변처럼 펼쳐졌다. 건물 사이로 흘러들어온 구름은 안개처럼 번지며 발끝을 간지럽혔고, 구름 위로 걸으면 발자국이 천천히 사라졌다. 마치 새 세계가 열리는 듯했다.
+
+      이상하게도 하늘은 더 가까워졌는데, 바람은 거의 불지 않았다. 도시가 공중에 떠 있는데도 흔들리지 않았고, 소음도 줄어들었다. 엔진 소리도, 자동차 경적도, 지하철의 굉음도 사라졌다.
+      대신, 희미한 공명 같은 소리가 도시 전체에 울려 퍼졌다. 마치 도시 자체가 살아 숨 쉬는 생명체처럼.
+
+      사람들은 공포와 호기심 사이에서 방황했다.
+      어떤 이들은 구름이 바다처럼 펼쳐진 가장자리에서 끝없는 아래쪽 하늘을 내려다보며 공허함에 빠졌다. 또 어떤 이들은 높은 건물 옥상에 올라가 별과 달이 평소보다 가깝게 보이는 기이한 광경에 매료되었다.`,
+    status: '심사 대기'
   },
   {
     id: '2',
-    title: 'Echoes in the Cloud',
-    director: 'James Rivera',
-    genre: 'Sci-Fi Romance',
+    title: '기억을 파는 상점',
+    director: '양준영',
+    genre: 'SF',
     image: '/sci-fi-movie-poster.png',
-    dreamConcept: 'Two souls communicating through digital dreams',
-    status: 'scored',
+    dreamDescription: 'Two souls communicating through digital dreams',
+    status: '심사 완료',
     scores: { creativity: 5, execution: 4, emotional_impact: 5, storytelling: 4 }
   },
   {
     id: '3',
-    title: 'Lost Horizons',
-    director: 'Mike Johnson',
-    genre: 'Adventure',
+    title: '시간이 멈춘 카페',
+    director: '임지우',
+    genre: '어드벤처',
     image: '/adventure-film-poster.jpg',
-    dreamConcept: 'An explorer finds a portal to another dimension',
-    status: 'rejected'
+    dreamDescription: 'An explorer finds a portal to another dimension',
+    status: '심사 대기'
   }
 ]
 
@@ -63,48 +81,73 @@ interface ScoreLine {
   setScore: (score: number) => void
 }
 
+const SCORE_LABELS: Record<keyof FilmScore, string> = {
+  creativity: '창의성',
+  execution: '연출',
+  emotional_impact: '감정 전달력',
+  storytelling: '스토리텔링'
+}
+
 export default function JudgePage() {
   const [films, setFilms] = useState(MOCK_JUDGING_FILMS)
-  const [selectedFilmId, setSelectedFilmId] = useState(MOCK_JUDGING_FILMS[0]?.id)
-  const [currentScores, setCurrentScores] = useState<Record<string, number>>({
+  const [selectedFilmId, setSelectedFilmId] = useState<string | undefined>(MOCK_JUDGING_FILMS[0]?.id)
+  const [statusFilter, setStatusFilter] = useState<'all' | '심사 대기' | '심사 완료'>('all')
+  const [currentScores, setCurrentScores] = useState<FilmScore>({
     creativity: 0,
     execution: 0,
     emotional_impact: 0,
     storytelling: 0
   })
 
-  const selectedFilm = films.find(f => f.id === selectedFilmId)
+  const filteredFilms = useMemo(() => {
+    return statusFilter === 'all'
+      ? films
+      : films.filter(f => f.status === statusFilter)
+  }, [films, statusFilter])
 
-  const handleScoreChange = (criterion: string, score: number) => {
-    setCurrentScores(prev => ({ ...prev, [criterion]: score }))
+  const selectedFilm = films.find(f => f.id === selectedFilmId)
+  const totalFilms = films.length
+  const pendingCount = films.filter(f => f.status === '심사 대기').length
+  const completedCount = films.filter(f => f.status === '심사 완료').length
+  const canSubmitScores =
+    selectedFilm?.status === '심사 대기' &&
+    Object.values(currentScores).every(score => score > 0)
+
+  useEffect(() => {
+    if (filteredFilms.length === 0) {
+      setSelectedFilmId(undefined)
+      return
+    }
+    const existsInFilter = filteredFilms.some(f => f.id === selectedFilmId)
+    if (!existsInFilter) {
+      setSelectedFilmId(filteredFilms[0].id)
+    }
+  }, [filteredFilms, selectedFilmId])
+
+  const handleScoreChange = (criterion: keyof FilmScore, score: number) => {
+    setCurrentScores(prev => ({
+      ...prev,
+      [criterion]: prev[criterion] === score ? 0 : score
+    }))
   }
 
   const handleSubmitScores = () => {
+    if (!selectedFilm || selectedFilm.status !== '심사 대기' || !canSubmitScores) return
     setFilms(films.map(f => 
       f.id === selectedFilmId 
-        ? { ...f, status: 'scored' as const, scores: currentScores }
+        ? { ...f, status: '심사 완료', scores: currentScores }
         : f
     ))
     setCurrentScores({ creativity: 0, execution: 0, emotional_impact: 0, storytelling: 0 })
-    const nextPending = films.find(f => f.status === 'pending' && f.id !== selectedFilmId)
-    if (nextPending) setSelectedFilmId(nextPending.id)
-  }
-
-  const handleReject = () => {
-    setFilms(films.map(f => 
-      f.id === selectedFilmId 
-        ? { ...f, status: 'rejected' as const }
-        : f
-    ))
-    const nextPending = films.find(f => f.status === 'pending' && f.id !== selectedFilmId)
+    const nextPending = films.find(f => f.status === '심사 대기' && f.id !== selectedFilmId)
     if (nextPending) setSelectedFilmId(nextPending.id)
   }
 
   const scoreArray = [
-    { criterion: 'Creativity', icon: '✨', score: currentScores.creativity, setSc: (s: number) => handleScoreChange('creativity', s) },
-    { criterion: 'Execution', icon: '🎬', score: currentScores.execution, setSc: (s: number) => handleScoreChange('execution', s) },
-    { criterion: 'Emotional Impact', icon: '💫', score: currentScores.emotional_impact, setSc: (s: number) => handleScoreChange('emotional_impact', s) },
-    { criterion: 'Storytelling', icon: '📖', score: currentScores.storytelling, setSc: (s: number) => handleScoreChange('storytelling', s) }
+    { criterion: SCORE_LABELS.creativity, icon: '✨', score: currentScores.creativity, setSc: (s: number) => handleScoreChange('creativity', s) },
+    { criterion: SCORE_LABELS.execution, icon: '🎬', score: currentScores.execution, setSc: (s: number) => handleScoreChange('execution', s) },
+    { criterion: SCORE_LABELS.emotional_impact, icon: '💫', score: currentScores.emotional_impact, setSc: (s: number) => handleScoreChange('emotional_impact', s) },
+    { criterion: SCORE_LABELS.storytelling, icon: '📖', score: currentScores.storytelling, setSc: (s: number) => handleScoreChange('storytelling', s) }
   ]
 
   const averageScore = selectedFilm?.scores 
@@ -119,43 +162,70 @@ export default function JudgePage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-balance">
-              Judging Dashboard
+            <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 text-balance">
+              심사 대시보드
             </h1>
             <p className="text-lg text-muted-foreground text-balance">
-              Review and score submitted films. Your feedback helps crown the best AI-generated masterpieces.
+              출품된 영화들을 심사해 주세요. 귀하의 심사를 통해 영화제 수상작을 선정합니다.
             </p>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="p-6 bg-card border-border">
+            <Card
+              role="button"
+              tabIndex={0}
+              onClick={() => setStatusFilter('all')}
+              className={`p-6 bg-card border transition ${
+                statusFilter === 'all'
+                  ? 'border-primary shadow-[0_0_0_2px] shadow-primary/30'
+                  : 'border-border hover:border-primary/60'
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Pending Review</p>
-                  <p className="text-3xl font-bold text-foreground">{films.filter(f => f.status === 'pending').length}</p>
+                  <p className="text-sm text-muted-foreground mb-1">전체 출품작</p>
+                  <p className="text-3xl font-bold text-foreground">{totalFilms}</p>
                 </div>
-                <Clock className="w-8 h-8 text-muted" />
+                <CircleEllipsis className="w-8 h-8 text-primary" />
               </div>
             </Card>
 
-            <Card className="p-6 bg-card border-border">
+            <Card
+              role="button"
+              tabIndex={0}
+              onClick={() => setStatusFilter('심사 완료')}
+              className={`p-6 bg-card border transition ${
+                statusFilter === '심사 완료'
+                  ? 'border-primary shadow-[0_0_0_2px] shadow-primary/30'
+                  : 'border-border hover:border-primary/60'
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Scored</p>
-                  <p className="text-3xl font-bold text-foreground">{films.filter(f => f.status === 'scored').length}</p>
+                  <p className="text-sm text-muted-foreground mb-1">심사 완료</p>
+                  <p className="text-3xl font-bold text-foreground">{completedCount}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-400" />
               </div>
             </Card>
 
-            <Card className="p-6 bg-card border-border">
+            <Card
+              role="button"
+              tabIndex={0}
+              onClick={() => setStatusFilter('심사 대기')}
+              className={`p-6 bg-card border transition ${
+                statusFilter === '심사 대기'
+                  ? 'border-primary shadow-[0_0_0_2px] shadow-primary/30'
+                  : 'border-border hover:border-primary/60'
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Rejected</p>
-                  <p className="text-3xl font-bold text-foreground">{films.filter(f => f.status === 'rejected').length}</p>
+                  <p className="text-sm text-muted-foreground mb-1">심사 대기 중</p>
+                  <p className="text-3xl font-bold text-foreground">{pendingCount}</p>
                 </div>
-                <XCircle className="w-8 h-8 text-red-400" />
+                <Clock className="w-8 h-8 text-gray-600/70" />
               </div>
             </Card>
           </div>
@@ -166,25 +236,30 @@ export default function JudgePage() {
             <div className="lg:col-span-1">
               <h2 className="text-lg font-semibold text-foreground mb-4">Films to Review</h2>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {films.map(film => (
-                  <button
-                    key={film.id}
-                    onClick={() => setSelectedFilmId(film.id)}
-                    className={`w-full text-left p-4 rounded-lg transition border ${
-                      selectedFilmId === film.id
-                        ? 'bg-primary/20 border-primary'
-                        : 'bg-card border-border hover:border-primary'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-foreground line-clamp-1">{film.title}</h3>
-                      {film.status === 'pending' && <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">Pending</Badge>}
-                      {film.status === 'scored' && <Badge className="bg-green-500/20 text-green-400 text-xs">Scored</Badge>}
-                      {film.status === 'rejected' && <Badge className="bg-red-500/20 text-red-400 text-xs">Rejected</Badge>}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{film.director}</p>
-                  </button>
-                ))}
+                {filteredFilms.length === 0 ? (
+                  <div className="p-6 border border-dashed border-border rounded-lg text-center text-sm text-muted-foreground">
+                    선택한 상태에 해당하는 작품이 없습니다.
+                  </div>
+                ) : (
+                  filteredFilms.map(film => (
+                    <button
+                      key={film.id}
+                      onClick={() => setSelectedFilmId(film.id)}
+                      className={`w-full text-left p-4 rounded-lg transition border ${
+                        selectedFilmId === film.id
+                          ? 'bg-primary/20 border-primary'
+                          : 'bg-card border-border hover:border-primary'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-foreground line-clamp-1">{film.title}</h3>
+                        {film.status === '심사 대기' && <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">심사 대기</Badge>}
+                        {film.status === '심사 완료' && <Badge className="bg-green-500/20 text-green-400 text-xs">심사 완료</Badge>}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{film.director}</p>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -209,7 +284,7 @@ export default function JudgePage() {
 
                     <div className="flex gap-4">
                       <Badge className="bg-primary/20 text-primary">{selectedFilm.genre}</Badge>
-                      {selectedFilm.status === 'scored' && (
+                      {selectedFilm.status === '심사 완료' && (
                         <Badge className="bg-green-500/20 text-green-400">
                           Score: {averageScore.toFixed(1)}/5
                         </Badge>
@@ -217,16 +292,16 @@ export default function JudgePage() {
                     </div>
 
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2 uppercase font-semibold">Dream Concept</p>
-                      <p className="text-foreground">{selectedFilm.dreamConcept}</p>
+                      <p className="text-sm text-muted-foreground mb-2 uppercase font-semibold">Dream Description</p>
+                      <p className="text-foreground">{selectedFilm.dreamDescription}</p>
                     </div>
                   </div>
                 </Card>
 
                 {/* Scoring Section */}
-                {selectedFilm.status === 'pending' ? (
+                {selectedFilm.status === '심사 대기' && (
                   <Card className="p-6 bg-card border-border space-y-6">
-                    <h3 className="text-lg font-bold text-foreground">Score This Film</h3>
+                    <h3 className="text-lg font-bold text-foreground">심사 기준</h3>
 
                     <div className="space-y-6">
                       {scoreArray.map((item) => (
@@ -254,48 +329,52 @@ export default function JudgePage() {
                       ))}
                     </div>
 
-                    <div className="flex gap-4 pt-4">
-                      <Button
-                        onClick={handleReject}
-                        variant="outline"
-                        className="flex-1 border-red-500 text-red-400 hover:bg-red-500/10"
-                      >
-                        Reject
-                      </Button>
+                    <div className="pt-4 space-y-2">
                       <Button
                         onClick={handleSubmitScores}
-                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                        disabled={!canSubmitScores}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-40 disabled:pointer-events-none"
                       >
-                        Submit Scores
+                        심사 제출하기
                       </Button>
+                      {!canSubmitScores && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          모든 항목에 별점을 입력해야 심사를 확정할 수 있어요.
+                        </p>
+                      )}
                     </div>
                   </Card>
-                ) : (
+                )}
+
+                {selectedFilm.status === '심사 완료' && (
                   <Card className="p-6 bg-card border-border space-y-6">
                     <h3 className="text-lg font-bold text-foreground">Your Scores</h3>
 
                     {selectedFilm.scores && (
                       <div className="space-y-4">
-                        {Object.entries(selectedFilm.scores).map(([key, value]) => (
-                          <div key={key} className="flex items-center justify-between pb-4 border-b border-border">
-                            <span className="text-foreground font-semibold capitalize">
-                              {key.replace('_', ' ')}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-4 h-4 ${
-                                      i < value ? 'fill-yellow-400 text-yellow-400' : 'text-muted'
-                                    }`}
-                                  />
-                                ))}
+                        {Object.entries(selectedFilm.scores).map(([key, value]) => {
+                          const label = SCORE_LABELS[key as keyof FilmScore] ?? key
+                          return (
+                            <div key={key} className="flex items-center justify-between pb-4 border-b border-border">
+                              <span className="text-foreground font-semibold">
+                                {label}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <div className="flex">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-4 h-4 ${
+                                        i < value ? 'fill-yellow-400 text-yellow-400' : 'text-muted'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-foreground font-bold">{value}/5</span>
                               </div>
-                              <span className="text-foreground font-bold">{value}/5</span>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
 

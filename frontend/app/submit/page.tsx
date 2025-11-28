@@ -182,12 +182,12 @@ export default function SubmitPage() {
                         <SelectValue placeholder="장르 선택하기..." />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        <SelectItem value="fantasy">Fantasy</SelectItem>
-                        <SelectItem value="scifi">Sci-Fi</SelectItem>
-                        <SelectItem value="drama">Drama</SelectItem>
-                        <SelectItem value="adventure">Adventure</SelectItem>
-                        <SelectItem value="thriller">Thriller</SelectItem>
-                        <SelectItem value="romance">Romance</SelectItem>
+                        <SelectItem value="fantasy">판타지</SelectItem>
+                        <SelectItem value="scifi">SF</SelectItem>
+                        <SelectItem value="drama">드라마</SelectItem>
+                        <SelectItem value="adventure">어드벤처</SelectItem>
+                        <SelectItem value="thriller">공포/스릴러</SelectItem>
+                        <SelectItem value="romance">로맨스</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

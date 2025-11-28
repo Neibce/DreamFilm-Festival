@@ -59,7 +59,7 @@ export function CTA() {
                 ? 'opacity-100 translate-y-0' 
                 : 'opacity-0 translate-y-4'
             }`}>
-              수 천명의 Dreamer들과 함께, 지금 바로 꿈이 영화가 되는 여정을 시작하세요!
+              수천 명의 Dreamer들과 함께, 지금 바로 꿈이 영화가 되는 여정을 시작하세요!
             </p>
             
             <div className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 delay-300 ${
