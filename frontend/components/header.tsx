@@ -16,7 +16,7 @@ export function Header() {
               <span className="text-primary-foreground font-bold text-lg">DF</span>
             </div>
             <div className="flex flex-col leading-none ml-1">
-              <span className="font-bold text-[14px] text-foreground hidden sm:inline">2025년 제13회</span>
+              <span className="font-bold text-[14px] text-foreground hidden sm:inline">2025 제13회</span>
               <span className="font-bold text-xl text-foreground hidden sm:inline">Dream Film Festival</span>
             </div>
           </Link>

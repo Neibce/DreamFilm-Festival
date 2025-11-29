@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { useState } from 'react'
-import { Heart, Star, MessageCircle, Download, Share2, Award, Users, Clock, Film } from 'lucide-react'
+import { Heart, Star, MessageCircle, Download, Share2, BadgeInfo, User, Users, Clock, Film } from 'lucide-react'
 import Link from 'next/link'
 
 interface Review {
@@ -28,7 +28,7 @@ interface Film {
   rating: number
   votes: number
   reviews: number
-  dreamConcept: string
+  dreamTheme: string
   releaseDate?: string
   runtime?: string
   description?: string
@@ -47,12 +47,12 @@ const MOCK_FILM: Film = {
   rating: 4.8,
   votes: 1240,
   reviews: 89,
-  dreamConcept: 'A surreal garden that exists between dreams and reality',
+  dreamTheme: 'A surreal garden that exists between dreams and reality',
   releaseDate: '2024-06-15',
   runtime: '118 minutes',
   description: 'In the depths of a troubled mind lies a garden that blooms only at midnight. Follow Maya, a young artist struggling with reality, as she discovers a portal to a world where her paintings come to life. What begins as an escape becomes a journey of self-discovery and healing.',
   screenplay: 'Sarah Chen',
-  cinematography: 'James Wilson',
+  cinematography: 'Gemini',
   awards: 'Festival Award for Outstanding Vision'
 }
 
@@ -133,11 +133,9 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
         {/* Content Overlay */}
         <div className="relative h-full flex flex-col justify-end p-6 md:p-8 lg:p-12">
           <div className="max-w-4xl">
-            <Badge className="mb-3 bg-green-500/20 text-green-400 w-fit">Approved</Badge>
             <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-2 text-balance">
               {MOCK_FILM.title}
             </h1>
-            <p className="text-xl text-muted-foreground mb-4">Directed by {MOCK_FILM.director}</p>
           </div>
         </div>
       </section>
@@ -149,26 +147,21 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-8">
               {/* Quick Stats */}
-              <div className="grid grid-cols-4 gap-4">
-                <Card className="p-4 bg-card border-border text-center">
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    <span className="text-2xl font-bold text-foreground">{MOCK_FILM.rating}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{MOCK_FILM.votes} votes</p>
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="p-4 bg-card border-border justify-center items-center text-center">
+                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  <span className="text-2xl font-bold text-foreground">{MOCK_FILM.rating}</span>
+                  <p className="text-xs text-muted-foreground">평균 총점 <br/><span className='text-[10px]'>(총 {MOCK_FILM.votes}개)</span></p>
                 </Card>
                 <Card className="p-4 bg-card border-border text-center">
                   <MessageCircle className="w-5 h-5 mx-auto mb-2 text-accent" />
                   <p className="text-2xl font-bold text-foreground">{MOCK_FILM.reviews}</p>
-                  <p className="text-xs text-muted-foreground">Reviews</p>
+                  <p className="text-xs text-muted-foreground">리뷰</p>
                 </Card>
                 <Card className="p-4 bg-card border-border text-center">
-                  <Clock className="w-5 h-5 mx-auto mb-2 text-primary" />
-                  <p className="text-lg font-bold text-foreground">{MOCK_FILM.runtime}</p>
-                </Card>
-                <Card className="p-4 bg-card border-border text-center">
-                  <Award className="w-5 h-5 mx-auto mb-2 text-purple-400" />
-                  <p className="text-xs font-bold text-foreground">Award</p>
+                  <BadgeInfo className="w-5 h-5 mx-auto mb-2 text-primary" />
+                  <p className="text-2xl font-bold text-foreground">{MOCK_FILM.reviews}</p>
+                  <p className="text-xs text-muted-foreground">작품 정보</p>
                 </Card>
               </div>
 
@@ -180,25 +173,25 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                   className={`gap-2 ${isFavorited ? 'bg-red-500 hover:bg-red-600' : 'border-border'}`}
                 >
                   <Heart className={`w-5 h-5 ${isFavorited ? 'fill-white' : ''}`} />
-                  {isFavorited ? 'Favorited' : 'Favorite'}
+                  좋아요
                 </Button>
                 <Button variant="outline" className="gap-2 border-border">
                   <Share2 className="w-5 h-5" />
-                  Share
+                  공유
                 </Button>
               </div>
 
-              {/* Dream Concept */}
+              {/* Dream Theme */}
               <Card className="p-6 bg-card border-border">
-                <h2 className="text-2xl font-bold text-foreground mb-3">Dream Concept</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-3">꿈 주제</h2>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  {MOCK_FILM.dreamConcept}
+                  {MOCK_FILM.dreamTheme}
                 </p>
               </Card>
 
               {/* Full Description */}
               <Card className="p-6 bg-card border-border">
-                <h2 className="text-2xl font-bold text-foreground mb-3">Synopsis</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-3">시놉시스</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   {MOCK_FILM.description}
                 </p>
@@ -206,18 +199,18 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
               {/* Crew & Production */}
               <Card className="p-6 bg-card border-border">
-                <h2 className="text-2xl font-bold text-foreground mb-4">Production</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-4">제작진</h2>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Director</p>
+                    <p className="text-sm text-muted-foreground mb-1">감독</p>
                     <p className="text-lg text-foreground font-medium">{MOCK_FILM.director}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Screenplay</p>
+                    <p className="text-sm text-muted-foreground mb-1">각본</p>
                     <p className="text-lg text-foreground font-medium">{MOCK_FILM.screenplay}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Cinematography</p>
+                    <p className="text-sm text-muted-foreground mb-1">포스터 제작</p>
                     <p className="text-lg text-foreground font-medium">{MOCK_FILM.cinematography}</p>
                   </div>
                 </div>
@@ -225,7 +218,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
               {/* Reviews Section */}
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground">Reviews ({MOCK_FILM.reviews})</h2>
+                <h2 className="text-2xl font-bold text-foreground">리뷰 ({MOCK_FILM.reviews})</h2>
 
                 {MOCK_REVIEWS.map((review) => (
                   <Card key={review.id} className="p-6 bg-card border-border">
@@ -257,7 +250,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                             : 'bg-muted text-muted-foreground hover:bg-border'
                         }`}
                       >
-                        👍 Helpful ({review.helpful + (helpful[review.id] ? 1 : 0)})
+                        👍 ({review.helpful + (helpful[review.id] ? 1 : 0)})
                       </button>
                     </div>
                   </Card>
@@ -266,40 +259,17 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Right Column - Sidebar */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Film Info Card */}
-              <Card className="p-6 bg-card border-border sticky top-24">
-                <h3 className="font-bold text-foreground mb-4">Film Details</h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Genre</p>
-                    <Badge variant="outline" className="border-border">{MOCK_FILM.genre}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Runtime</p>
-                    <p className="text-foreground">{MOCK_FILM.runtime}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Release Date</p>
-                    <p className="text-foreground">{MOCK_FILM.releaseDate}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Festival Award</p>
-                    <p className="text-foreground text-sm">{MOCK_FILM.awards}</p>
-                  </div>
-                </div>
-              </Card>
-
+            <div className="space-y-6">
               {/* Director Info Card */}
               <Card className="p-6 bg-card border-border">
                 <div className="text-center">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mx-auto mb-3 flex items-center justify-center">
-                    <Film className="w-8 h-8 text-foreground" />
+                    <User className="w-8 h-8 text-foreground" />
                   </div>
                   <h4 className="font-bold text-foreground mb-1">{MOCK_FILM.director}</h4>
-                  <p className="text-sm text-muted-foreground mb-4">Visionary Director</p>
+                  <p className="text-sm text-muted-foreground mb-4">감독 및 각본</p>
                   <Button variant="outline" className="w-full border-border">
-                    View Profile
+                    프로필 보기
                   </Button>
                 </div>
               </Card>
@@ -308,7 +278,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
           {/* Related Films Section */}
           <section className="mt-16 pt-12 border-t border-border">
-            <h2 className="text-3xl font-bold text-foreground mb-6">Related Films</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-6">관련된 작품들</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {RELATED_FILMS.map((film) => (
                 <Link key={film.id} href={`/films/${film.id}`}>
