@@ -36,11 +36,14 @@ export function Header() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="px-6 py-2 text-foreground hover:text-primary transition">
-              회원가입
-            </button>
             <Link 
-              href="/submit"
+              href="/signup"
+              className="px-6 py-2 text-foreground hover:text-primary transition"
+            >
+              회원가입
+            </Link>
+            <Link 
+              href="/login"
               className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
             >
               로그인
@@ -72,12 +75,20 @@ export function Header() {
             <Link href="/judge" className="block text-muted-foreground hover:text-foreground transition py-2">
               Judge Films
             </Link>
-            <Link
-              href="/submit"
-              className="block w-full px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition text-center"
-            >
-              Get Started
-            </Link>
+            <div className="flex gap-3 pt-2">
+              <Link
+                href="/signup"
+                className="flex-1 px-6 py-2 text-foreground hover:text-primary transition text-center border border-border rounded-lg"
+              >
+                회원가입
+              </Link>
+              <Link
+                href="/login"
+                className="flex-1 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition text-center"
+              >
+                로그인
+              </Link>
+            </div>
           </div>
         )}
       </nav>
