@@ -2,41 +2,33 @@ package dreamfilmfestival.user.presentation;
 
 import dreamfilmfestival.user.application.UserService;
 import dreamfilmfestival.user.domain.User;
+import dreamfilmfestival.user.presentation.dto.SignUpRequest;
+import dreamfilmfestival.user.presentation.dto.SignUpResponse;
+import dreamfilmfestival.user.presentation.dto.UserDtoMapper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final UserDtoMapper userDtoMapper;
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
-        return ResponseEntity.ok(createdUser);
-    }
-
-    @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable Long userId) {
-        return userService.getUserById(userId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
-    }
-
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
-        userService.deleteUser(userId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<SignUpResponse> signUp(@Valid @RequestBody SignUpRequest request) {
+        // DTO -> 도메인 파라미터 변환 (Presentation Layer 책임)
+        User user = userService.signUp(
+                request.getUsername(),
+                request.getPassword(),
+                request.getEmail(),
+                request.getRole()
+        );
+        SignUpResponse response = userDtoMapper.toSignUpResponse(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
 
