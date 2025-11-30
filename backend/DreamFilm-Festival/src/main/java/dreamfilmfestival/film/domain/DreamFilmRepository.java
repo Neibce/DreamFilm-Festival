@@ -9,6 +9,7 @@ public interface DreamFilmRepository {
     List<DreamFilm> findAll();
     List<DreamFilm> findByFestivalId(Long festivalId);
     List<DreamFilm> findByDirectorId(Long directorId);
+    List<DreamFilm> findByStatus(FilmStatus status);
     void deleteById(Long filmId);
 }
 

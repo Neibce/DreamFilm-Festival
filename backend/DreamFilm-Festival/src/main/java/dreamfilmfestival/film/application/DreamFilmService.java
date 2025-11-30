@@ -2,39 +2,37 @@ package dreamfilmfestival.film.application;
 
 import dreamfilmfestival.film.domain.DreamFilm;
 import dreamfilmfestival.film.domain.DreamFilmRepository;
+import dreamfilmfestival.film.domain.FilmStatus;
+import dreamfilmfestival.film.domain.event.FilmCreatedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class DreamFilmService {
     private final DreamFilmRepository dreamFilmRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public DreamFilm createFilm(DreamFilm film) {
-        return dreamFilmRepository.save(film);
+    @Transactional
+    public DreamFilm createFilm(Long festivalId, Long directorId, String title, String dreamText) {
+        // DreamFilm 생성 (AI 생성 대기 상태)
+        DreamFilm film = DreamFilm.create(festivalId, directorId, title, dreamText);
+
+        DreamFilm savedFilm = dreamFilmRepository.save(film);
+
+        // 도메인 이벤트 발행 (AI 시나리오 생성)
+        eventPublisher.publishEvent(new FilmCreatedEvent(savedFilm.getFilmId(), savedFilm.getDreamText()));
+
+        return savedFilm;
     }
 
-    public Optional<DreamFilm> getFilmById(Long filmId) {
-        return dreamFilmRepository.findById(filmId);
-    }
-
-    public List<DreamFilm> getAllFilms() {
-        return dreamFilmRepository.findAll();
-    }
-
-    public List<DreamFilm> getFilmsByFestivalId(Long festivalId) {
-        return dreamFilmRepository.findByFestivalId(festivalId);
-    }
-
-    public List<DreamFilm> getFilmsByDirectorId(Long directorId) {
-        return dreamFilmRepository.findByDirectorId(directorId);
-    }
-
-    public void deleteFilm(Long filmId) {
-        dreamFilmRepository.deleteById(filmId);
+    @Transactional(readOnly = true)
+    public List<DreamFilm> getSubmittedFilms() {
+        return dreamFilmRepository.findByStatus(FilmStatus.SUBMITTED);
     }
 }
 
