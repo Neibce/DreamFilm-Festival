@@ -162,7 +162,7 @@ export default function JudgePage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 text-balance">
+            <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 text-balance">
               심사 대시보드
             </h1>
             <p className="text-lg text-muted-foreground text-balance">

@@ -23,7 +23,7 @@ interface Film {
   dreamSummary: string
 }
 
-const MOCK_FILMS: Film[] = [
+export const MOCK_FILMS: Film[] = [
   {
     id: '1',
     title: 'The Midnight Garden',
