@@ -7,6 +7,7 @@ public interface FilmFestivalRepository {
     FilmFestival save(FilmFestival festival);
     Optional<FilmFestival> findById(Long festivalId);
     List<FilmFestival> findAll();
+    List<FilmFestival> findOngoingFestivals();
     void deleteById(Long festivalId);
 }
 

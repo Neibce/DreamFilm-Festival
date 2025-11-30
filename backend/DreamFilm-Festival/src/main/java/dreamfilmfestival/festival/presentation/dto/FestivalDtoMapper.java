@@ -1,0 +1,27 @@
+package dreamfilmfestival.festival.presentation.dto;
+
+import dreamfilmfestival.festival.domain.FilmFestival;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Component
+public class FestivalDtoMapper {
+    
+    public FestivalResponse toFestivalResponse(FilmFestival festival) {
+        return FestivalResponse.builder()
+                .festivalId(festival.getFestivalId())
+                .festivalName(festival.getFestivalName())
+                .startDate(festival.getStartDate())
+                .endDate(festival.getEndDate())
+                .build();
+    }
+
+    public List<FestivalResponse> toFestivalResponseList(List<FilmFestival> festivals) {
+        return festivals.stream()
+                .map(this::toFestivalResponse)
+                .collect(Collectors.toList());
+    }
+}
+
