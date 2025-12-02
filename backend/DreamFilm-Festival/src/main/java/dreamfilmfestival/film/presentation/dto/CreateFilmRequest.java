@@ -12,9 +12,6 @@ public class CreateFilmRequest {
     @NotNull(message = "영화제 ID는 필수입니다.")
     private Long festivalId;
 
-    @NotNull(message = "감독 ID는 필수입니다.")
-    private Long directorId;
-
     @NotBlank(message = "제목은 필수입니다.")
     @Size(min = 1, max = 255, message = "제목은 1자 이상 255자 이하여야 합니다.")
     private String title;
