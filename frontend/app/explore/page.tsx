@@ -115,7 +115,7 @@ export default function ExplorePage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-12 px-4 md:px-6 lg:px-8 border-b border-border">
+      <section className="pt-15 pb-12 px-4 md:px-6 lg:px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
           <h1 className="font-clipartkorea text-3xl md:text-[43px] font-extrabold text-foreground mb-4 text-balance">
             새롭게 창조된 영화들을 만나보세요

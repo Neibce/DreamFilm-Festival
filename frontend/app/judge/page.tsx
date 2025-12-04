@@ -92,12 +92,19 @@ export default function JudgePage() {
   const [films, setFilms] = useState(MOCK_JUDGING_FILMS)
   const [selectedFilmId, setSelectedFilmId] = useState<string | undefined>(MOCK_JUDGING_FILMS[0]?.id)
   const [statusFilter, setStatusFilter] = useState<'all' | '심사 대기' | '심사 완료'>('all')
+  const [isFestivalFinalized, setIsFestivalFinalized] = useState(false)
   const [currentScores, setCurrentScores] = useState<FilmScore>({
     creativity: 0,
     execution: 0,
     emotional_impact: 0,
     storytelling: 0
   })
+
+  // 영화제 종료 상태 확인
+  useEffect(() => {
+    const finalized = localStorage.getItem('festivalFinalized') === 'true'
+    setIsFestivalFinalized(finalized)
+  }, [])
 
   const filteredFilms = useMemo(() => {
     return statusFilter === 'all'
@@ -132,7 +139,7 @@ export default function JudgePage() {
   }
 
   const handleSubmitScores = () => {
-    if (!selectedFilm || selectedFilm.status !== '심사 대기' || !canSubmitScores) return
+    if (!selectedFilm || selectedFilm.status !== '심사 대기' || !canSubmitScores || isFestivalFinalized) return
     setFilms(films.map(f => 
       f.id === selectedFilmId 
         ? { ...f, status: '심사 완료', scores: currentScores }
@@ -158,7 +165,7 @@ export default function JudgePage() {
     <main className="min-h-screen bg-background">
       <Header />
 
-      <section className="pt-32 pb-12 px-4 md:px-6 lg:px-8">
+      <section className="pt-15 pb-12 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12">
@@ -168,6 +175,13 @@ export default function JudgePage() {
             <p className="text-lg text-muted-foreground text-balance">
               출품된 영화들을 심사해 주세요. 귀하의 심사를 통해 영화제 수상작을 선정합니다.
             </p>
+            {isFestivalFinalized && (
+              <div className="mt-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                <p className="text-yellow-500 font-semibold text-center">
+                  🏆 영화제가 종료되었습니다. 수상작이 확정되어 더 이상 심사가 불가능합니다.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Stats Cards */}
@@ -303,46 +317,62 @@ export default function JudgePage() {
                   <Card className="p-6 bg-card border-border space-y-6">
                     <h3 className="text-lg font-bold text-foreground">심사 기준</h3>
 
-                    <div className="space-y-6">
-                      {scoreArray.map((item) => (
-                        <div key={item.criterion}>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-foreground font-semibold">{item.criterion}</label>
-                            <span className="text-primary font-bold text-lg">{item.score}/5</span>
-                          </div>
-                          <div className="flex gap-2">
-                            {[1, 2, 3, 4, 5].map(score => (
-                              <button
-                                key={score}
-                                onClick={() => item.setSc(score)}
-                                className={`flex-1 py-3 rounded-lg transition border ${
-                                  item.score >= score
-                                    ? 'bg-primary border-primary text-primary-foreground'
-                                    : 'bg-background border-border text-muted-foreground hover:border-primary'
-                                }`}
-                              >
-                                <Star className={`w-4 h-4 mx-auto ${item.score >= score ? 'fill-current' : ''}`} />
-                              </button>
-                            ))}
-                          </div>
+                    {isFestivalFinalized ? (
+                      <div className="py-8 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                          <CheckCircle className="w-8 h-8 text-yellow-500" />
                         </div>
-                      ))}
-                    </div>
-
-                    <div className="pt-4 space-y-2">
-                      <Button
-                        onClick={handleSubmitScores}
-                        disabled={!canSubmitScores}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-40 disabled:pointer-events-none"
-                      >
-                        심사 제출하기
-                      </Button>
-                      {!canSubmitScores && (
-                        <p className="text-xs text-muted-foreground text-center">
-                          모든 항목에 별점을 입력해야 심사를 확정할 수 있어요.
+                        <p className="text-lg font-semibold text-foreground mb-2">
+                          영화제가 종료되었습니다
                         </p>
-                      )}
-                    </div>
+                        <p className="text-sm text-muted-foreground">
+                          수상작이 확정되어 더 이상 심사를 진행할 수 없습니다.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-6">
+                          {scoreArray.map((item) => (
+                            <div key={item.criterion}>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-foreground font-semibold">{item.criterion}</label>
+                                <span className="text-primary font-bold text-lg">{item.score}/5</span>
+                              </div>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map(score => (
+                                  <button
+                                    key={score}
+                                    onClick={() => item.setSc(score)}
+                                    className={`flex-1 py-3 rounded-lg transition border ${
+                                      item.score >= score
+                                        ? 'bg-primary border-primary text-primary-foreground'
+                                        : 'bg-background border-border text-muted-foreground hover:border-primary'
+                                    }`}
+                                  >
+                                    <Star className={`w-4 h-4 mx-auto ${item.score >= score ? 'fill-current' : ''}`} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="pt-4 space-y-2">
+                          <Button
+                            onClick={handleSubmitScores}
+                            disabled={!canSubmitScores}
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-40 disabled:pointer-events-none"
+                          >
+                            심사 제출하기
+                          </Button>
+                          {!canSubmitScores && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              모든 항목에 별점을 입력해야 심사를 확정할 수 있어요.
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </Card>
                 )}
 
