@@ -27,7 +27,6 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (isFormValid) {
-      // TODO: 로그인 API 호출
       console.log('로그인 시도:', formData)
       alert('로그인되었습니다!')
     }

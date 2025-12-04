@@ -67,7 +67,6 @@ export default function SubmitAdmin() {
 
     const selectedFilm = submissions.find(s => s.id === selectedFilmId)
 
-    // Stats
     const totalCount = submissions.length
     const pendingCount = submissions.filter(s => s.status === 'pending').length
     const approvedCount = submissions.filter(s => s.status === 'approved').length
@@ -89,7 +88,6 @@ export default function SubmitAdmin() {
             s.id === id ? { ...s, status: newStatus } : s
         ))
 
-        // Auto-select next pending item if available and we are in pending filter
         if (statusFilter === 'pending') {
             const nextPending = submissions.find(s => s.status === 'pending' && s.id !== id)
             if (nextPending) {

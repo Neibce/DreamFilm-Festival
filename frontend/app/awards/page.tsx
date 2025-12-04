@@ -76,7 +76,6 @@ export default function AwardsPage() {
     const [winners, setWinners] = useState<AwardWinner[]>(MOCK_WINNERS)
     const [popularityWinner, setPopularityWinner] = useState<PopularityWinner | null>(null)
 
-    // localStorage에서 수상작 데이터 가져오기
     useEffect(() => {
         const savedWinners = localStorage.getItem('awardWinners')
         const savedPopularityWinner = localStorage.getItem('popularityWinner')
@@ -213,7 +212,6 @@ export default function AwardsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {otherWinners.map((winner) => {
                             const rankBadge = getRankBadge(winner.rank)
-                            // 우수상(2위)은 gray-400, 장려상(3위)은 amber-600
                             const hoverBorderClass = winner.rank === 2 ? 'hover:border-gray-400' : 'hover:border-amber-600'
                             const hoverTextClass = winner.rank === 2 ? 'group-hover:text-gray-400' : 'group-hover:text-amber-600'
                             const badgeBgClass = winner.rank === 2 ? 'bg-gray-400/20 text-gray-400' : 'bg-amber-600/20 text-amber-600'

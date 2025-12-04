@@ -50,10 +50,8 @@ export default function SubmissionPage() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'approved'>('all')
 
-  // explore 페이지의 user review 점수와 연동 (승인 완료된 작품만)
   const submissionsWithRatings = useMemo(() => {
     return submissions.map(submission => {
-      // 승인 완료된 작품만 user rating을 가져옴
       if (submission.status === 'approved') {
         const film = MOCK_FILMS.find(f => f.id === submission.id)
         return {

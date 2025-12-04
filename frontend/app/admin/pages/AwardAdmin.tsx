@@ -16,13 +16,12 @@ interface AwardFilm {
     audienceVotes: number // 관객 투표 수
 }
 
-// 승인된 영화들의 목록 (실제로는 API에서 가져와야 함)
 const MOCK_AWARD_FILMS: AwardFilm[] = [
     {
         id: '1',
         title: '하늘을 나는 도시',
         director: '김윤영',
-        judgeAverageScore: 4.5, // 여러 심사위원의 평균
+        judgeAverageScore: 4.5,
         audienceRating: 4.8,
         audienceVotes: 1240
     },
@@ -30,7 +29,7 @@ const MOCK_AWARD_FILMS: AwardFilm[] = [
         id: '2',
         title: '기억을 파는 상점',
         director: '양준영',
-        judgeAverageScore: 4.5, // (5+4+5+4)/4 = 4.5
+        judgeAverageScore: 4.5,
         audienceRating: 4.6,
         audienceVotes: 956
     },
@@ -65,21 +64,16 @@ export default function AwardAdmin() {
     const [isFinalized, setIsFinalized] = useState(false)
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
-    // 영화제 종료 상태 확인
     useEffect(() => {
         const finalized = localStorage.getItem('festivalFinalized') === 'true'
         setIsFinalized(finalized)
     }, [])
 
-    // 최종 점수 계산 및 정렬
     const rankedFilms = useMemo(() => {
         return MOCK_AWARD_FILMS
             .map(film => {
-                // 심사위원 평가 점수를 100점 만점으로 변환 (5점 만점 * 20)
                 const judgeScore100 = film.judgeAverageScore * 20
-                // 관객 투표 점수를 100점 만점으로 변환 (5점 만점 * 20)
                 const audienceScore100 = film.audienceRating * 20
-                // 최종 점수 = 심사위원 평가(70%) + 관객 투표(30%)
                 const finalScore = judgeScore100 * 0.7 + audienceScore100 * 0.3
 
                 return {
@@ -96,7 +90,6 @@ export default function AwardAdmin() {
             }))
     }, [])
 
-    // 인기상 (관객 투표 100%)
     const popularityRankedFilms = useMemo(() => {
         return MOCK_AWARD_FILMS
             .map(film => {
@@ -129,14 +122,12 @@ export default function AwardAdmin() {
     }
 
     const handleFinalizeAwards = () => {
-        // 수상작 데이터 저장 (상위 3개 + 인기상 1등)
         localStorage.setItem('festivalFinalized', 'true')
         localStorage.setItem('awardWinners', JSON.stringify(rankedFilms.slice(0, 3)))
         localStorage.setItem('popularityWinner', JSON.stringify(popularityRankedFilms[0]))
         setIsFinalized(true)
         setShowConfirmDialog(false)
         
-        // 수상작 페이지로 이동
         router.push('/awards')
     }
 
@@ -220,7 +211,6 @@ export default function AwardAdmin() {
                                         </Badge>
                                     </div>
                                 ))}
-                                {/* 인기상 1등 */}
                                 <div className="flex items-center gap-3 p-3 bg-pink-500/10 rounded-lg border border-pink-500/30">
                                     <Heart className="w-5 h-5 text-pink-500" />
                                     <div className="flex-1">

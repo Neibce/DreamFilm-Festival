@@ -100,7 +100,6 @@ export default function JudgePage() {
     storytelling: 0
   })
 
-  // 영화제 종료 상태 확인
   useEffect(() => {
     const finalized = localStorage.getItem('festivalFinalized') === 'true'
     setIsFestivalFinalized(finalized)

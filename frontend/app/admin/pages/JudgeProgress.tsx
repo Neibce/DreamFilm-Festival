@@ -2,7 +2,6 @@
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { CheckCircle, Clock, User } from "lucide-react"
 
 interface Judge {
@@ -15,7 +14,6 @@ interface Judge {
     completionRate: number
 }
 
-// Mock data
 const MOCK_JUDGES: Judge[] = [
     {
         id: '1',
@@ -73,15 +71,13 @@ export default function JudgeProgress() {
 
     const getProgressColor = (rate: number) => {
         if (rate === 100) return 'bg-green-500'
-        if (rate >= 70) return 'bg-blue-500'
-        if (rate >= 50) return 'bg-yellow-500'
+        if (rate >= 50) return 'bg-blue-500'
         return 'bg-red-500'
     }
 
     const getStatusBadge = (rate: number) => {
         if (rate === 100) return { text: '완료', color: 'bg-green-500/20 text-green-500' }
-        if (rate >= 70) return { text: '양호', color: 'bg-blue-500/20 text-blue-500' }
-        if (rate >= 50) return { text: '진행중', color: 'bg-yellow-500/20 text-yellow-500' }
+        if (rate >= 50) return { text: '양호', color: 'bg-blue-500/20 text-blue-500' }
         return { text: '지연', color: 'bg-red-500/20 text-red-500' }
     }
 
