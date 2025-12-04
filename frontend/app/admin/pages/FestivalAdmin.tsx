@@ -25,7 +25,7 @@ interface Festival {
 const MOCK_FESTIVALS: Festival[] = [
     {
         id: '1',
-        name: '제13회 Dream Film Festival',
+        name: '제3회 Dream Film Festival',
         year: 2025,
         status: 'ongoing',
         submissionStart: '2025-01-01',
@@ -38,7 +38,7 @@ const MOCK_FESTIVALS: Festival[] = [
     },
     {
         id: '2',
-        name: '제12회 Dream Film Festival',
+        name: '제2회 Dream Film Festival',
         year: 2024,
         status: 'completed',
         submissionStart: '2024-01-01',
@@ -51,7 +51,7 @@ const MOCK_FESTIVALS: Festival[] = [
     },
     {
         id: '3',
-        name: '제11회 Dream Film Festival',
+        name: '제1회 Dream Film Festival',
         year: 2023,
         status: 'completed',
         submissionStart: '2023-01-01',

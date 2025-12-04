@@ -99,15 +99,11 @@ export default function SubmitAdmin() {
     }
 
     return (
-        <div className="h-full space-y-6">
+        <div className="p-6 border-border h-full">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 text-balance">
-                    출품작 심사 관리
-                </h1>
-                <p className="text-lg text-muted-foreground text-balance">
-                    출품된 영화들을 검토하고 승인 또는 반려를 결정하세요. 승인된 작품만 심사 단계로 진행됩니다.
-                </p>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-2">출품작 심사</h2>
+                <p className="text-muted-foreground">출품된 영화들을 검토하고 승인 또는 반려를 결정하세요. 승인된 작품만 심사 단계로 진행됩니다.</p>
             </div>
 
             {/* Stats / Filter Cards */}
