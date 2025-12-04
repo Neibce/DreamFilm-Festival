@@ -116,9 +116,9 @@ export default function AwardsPage() {
                         <Crown className="w-16 h-16 text-yellow-500" />
                     </div>
                     <h1 className="font-clipartkorea text-4xl md:text-6xl font-extrabold text-foreground mb-4">
-                        2025 제13회 Dream Film Festival
+                        2025 제3회 Dream Film Festival
                     </h1>
-                    <h2 className="text-2xl md:text-3xl font-bold text-primary mb-6">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6">
                         수상작 발표
                     </h2>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -137,7 +137,7 @@ export default function AwardsPage() {
                         <h2 className="text-3xl font-bold text-foreground mb-2">Grand Prize Winner</h2>
                     </div>
 
-                    <Card className="overflow-hidden bg-gradient-to-br from-yellow-500/10 via-background to-background border-yellow-500/30 hover:shadow-2xl hover:shadow-yellow-500/40 hover:ring-1 hover:ring-yellow-500/20">
+                    <Card className="overflow-hidden bg-gradient-to-br from-yellow-500/10 via-background to-background border-yellow-500/30 hover-glow-yellow group">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                             {/* Image */}
                             <div className="relative h-96 lg:h-auto overflow-hidden bg-muted">
@@ -350,12 +350,9 @@ export default function AwardsPage() {
             <section className="py-12 px-4 md:px-6 lg:px-8 border-t border-border">
                 <div className="max-w-3xl mx-auto text-center space-y-4">
                     <h3 className="text-2xl font-bold text-foreground">
-                        축하합니다! 🎉
+                        모든 감독 분들과 참여해주신 심사위원, 관객 여러분께 감사드립니다.
                     </h3>
                     <p className="text-lg text-muted-foreground">
-                        모든 출품작과 참여해주신 심사위원, 관객 여러분께 감사드립니다.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
                         2025 제13회 Dream Film Festival은 성공적으로 마무리되었습니다.
                     </p>
                 </div>

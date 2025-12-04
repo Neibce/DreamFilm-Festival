@@ -12,7 +12,7 @@ import { useState } from 'react'
 import { Upload, Wand2, CheckCircle } from 'lucide-react'
 
 export default function SubmitPage() {
-  const [step, setStep] = useState<'dream' | 'details' | 'review' | 'success'>('dream')
+  const [step, setStep] = useState<'dream' | 'check' | 'success'>('dream')
   const [formData, setFormData] = useState({
     dreamDescription: '',
     mood: '',
@@ -28,8 +28,7 @@ export default function SubmitPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const isStep1Valid = formData.dreamDescription.length > 50
-  const isStep2Valid = formData.title && formData.genre && formData.director && formData.email
+  const isStep1Valid = formData.title && formData.dreamDescription.length > 50 && formData.mood && formData.genre && formData.themes
 
   const handleSubmit = () => {
     setStep('success')
@@ -54,13 +53,13 @@ export default function SubmitPage() {
           {/* Progress Steps */}
           <div className="mb-12">
             <div className="flex justify-between mb-8">
-              {['Dream', 'Details', 'Review', 'Success'].map((s, i) => (
+              {['Dream', 'check', 'Success'].map((s, i) => (
                 <div key={s} className="flex flex-col items-center">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition ${
-                    step === ['dream', 'details', 'review', 'success'][i]
+                    step === ['dream', 'check', 'success'][i]
                       ? 'bg-primary text-primary-foreground'
-                      : ['dream', 'details', 'review', 'success'].indexOf(step) > i
-                      ? 'bg-accent text-accent-foreground'
+                      : ['dream', 'check', 'success'].indexOf(step) > i
+                      ? 'bg-primary/50 text-white/60'
                       : 'bg-card text-muted-foreground border border-border'
                   }`}>
                     {i + 1}
@@ -71,9 +70,8 @@ export default function SubmitPage() {
             </div>
             <div className="h-1 bg-card rounded-full overflow-hidden">
               <div className={`h-full bg-primary transition-all ${
-                step === 'dream' ? 'w-1/4' :
-                step === 'details' ? 'w-1/2' :
-                step === 'review' ? 'w-3/4' :
+                step === 'dream' ? 'w-1/3' :
+                step === 'check' ? 'w-2/3' :
                 'w-full'
               }`} />
             </div>
@@ -86,26 +84,29 @@ export default function SubmitPage() {
                 <h2 className="text-2xl font-bold text-foreground mb-2">당신의 꿈을 기록해 보세요</h2>
                 <p className="text-muted-foreground">꿈에 담긴 색채, 감정, 인물, 장면들을 가능한 자세히 작성해 주세요.</p>
               </div>
-
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="dream" className="text-foreground font-semibold mb-2 block">
-                    오늘 꾼 꿈은...
+                  <Label htmlFor="title" className="text-foreground font-semibold mb-2 block">
+                    영화 제목
                   </Label>
-                  <Textarea
-                    id="dream"
-                    placeholder="ex) 나는 하늘 위의 도시에서 친구와 함께 날고 있었다..."
-                    value={formData.dreamDescription}
-                    onChange={(e) => handleInputChange('dreamDescription', e.target.value)}
-                    className="min-h-48 bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
+                  <Input
+                    id="title"
+                    placeholder='ex) 하늘의 나라'
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    className="bg-background border-border"
                   />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {formData.dreamDescription.length}/500자 (최소 50자 이상)
-                  </p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                <div>
+                  <Label htmlFor="dreamDescription" className="text-foreground font-semibold mb-2 block"> 오늘 꾼 꿈은... </Label>
+                  <Textarea 
+                    id="dreamDescription" placeholder="ex) 나는 하늘 위의 도시에서 친구와 함께 날고 있었다..."
+                    value={formData.dreamDescription} onChange={(e) => handleInputChange('dreamDescription', e.target.value)}
+                    className="min-h-48 bg-background border-border text-foreground placeholder:text-muted-foreground resize-none" />
+                  <p className="text-xs text-muted-foreground mt-2"> {formData.dreamDescription.length}/500자 (최소 50자 이상) </p>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="row-span-1">
                     <Label htmlFor="mood" className="text-foreground font-semibold mb-2 block">
                       꿈의 분위기는...
                     </Label>
@@ -123,57 +124,7 @@ export default function SubmitPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div>
-                    <Label htmlFor="themes" className="text-foreground font-semibold mb-2 block">
-                      테마는... (쉼표로 구분)
-                    </Label>
-                    <Input
-                      id="themes"
-                      placeholder="ex) 기억, 시간 여행, 미스터리..."
-                      value={formData.themes}
-                      onChange={(e) => handleInputChange('themes', e.target.value)}
-                      className="bg-background border-border"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => setStep('details')}
-                disabled={!isStep1Valid}
-                className="w-full bg-primary font-light hover:bg-primary/90 text-primary-foreground"
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                영화 시나리오 생성하기
-              </Button>
-            </Card>
-          )}
-
-          {/* Step 2: Film Details */}
-          {step === 'details' && (
-            <Card className="p-8 bg-card border-border space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">영화 상세 정보</h2>
-                <p className="text-muted-foreground">영화 상세 정보를 입력해 주세요.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title" className="text-foreground font-semibold mb-2 block">
-                    영화 제목
-                  </Label>
-                  <Input
-                    id="title"
-                    placeholder='ex) 하늘의 나라'
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="bg-background border-border"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="row-span-1">
                     <Label htmlFor="genre" className="text-foreground font-semibold mb-2 block">
                       장르
                     </Label>
@@ -192,73 +143,40 @@ export default function SubmitPage() {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label htmlFor="audience" className="text-foreground font-semibold mb-2 block">
-                      권장 관람 연령
+                  <div className="col-span-2">
+                    <Label htmlFor="themes" className="text-foreground font-semibold mb-2 block">
+                      테마는...
                     </Label>
-                    <Select value={formData.targetAudience} onValueChange={(value) => handleInputChange('targetAudience', value)}>
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue placeholder="관람 등급 선택" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        <SelectItem value="all">전체 관람가</SelectItem>
-                        <SelectItem value="teen">12세 이상 관람가</SelectItem>
-                        <SelectItem value="fifteen">15세 이상 관람가</SelectItem>
-                        <SelectItem value="adult">19세 이상 관람가</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="themes"
+                      placeholder="ex) 기억, 시간 여행, 미스터리..."
+                      value={formData.themes}
+                      onChange={(e) => handleInputChange('themes', e.target.value)}
+                      className="bg-background border-border"
+                    />
                   </div>
                 </div>
-
-                <div>
-                  <Label htmlFor="director" className="text-foreground font-semibold mb-2 block">
-                    감독 이름
-                  </Label>
-                  <Input
-                    id="director"
-                    placeholder="당신의 이름을 적어주세요"
-                    value={formData.director}
-                    onChange={(e) => handleInputChange('director', e.target.value)}
-                    className="bg-background border-border"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email" className="text-foreground font-semibold mb-2 block">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="bg-background border-border"
-                  />
-                </div>
               </div>
-
-              <div className="flex gap-4">
+              <div>
+                {!isStep1Valid && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    모든 항목을 입력해야 다음 단계로 넘어갈 수 있어요.
+                  </p>
+                )}
                 <Button
-                  onClick={() => setStep('dream')}
-                  variant="outline"
-                  className="flex-1 border-border hover:bg-card"
+                  onClick={() => setStep('check')}
+                  disabled={!isStep1Valid}
+                  className="w-full mt-2 bg-primary font-light hover:bg-primary/90 text-primary-foreground"
                 >
-                  뒤로 가기
-                </Button>
-                <Button
-                  onClick={() => setStep('review')}
-                  disabled={!isStep2Valid}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  제출 검토
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  영화 시나리오 생성하기
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* Step 3: Review */}
-          {step === 'review' && (
+          {/* Step 2: Check */}
+          {step === 'check' && (
             <Card className="p-8 bg-card border-border space-y-6">
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">출품작 마지막 점검</h2>
@@ -291,15 +209,15 @@ export default function SubmitPage() {
                 </div>
               </div>
 
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <p className="text-sm text-blue-400">
+              <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4 mb-0">
+                <p className="text-sm text-green-500">
                   당신의 제출 내용은 관리자 팀이 24시간 이내에 검토할 예정입니다. 승인 후 확인 이메일이 발송됩니다.
                 </p>
               </div>
 
               <div className="flex gap-4">
                 <Button
-                  onClick={() => setStep('details')}
+                  onClick={() => setStep('dream')}
                   variant="outline"
                   className="flex-1 border-border hover:bg-card"
                 >
@@ -315,7 +233,7 @@ export default function SubmitPage() {
             </Card>
           )}
 
-          {/* Step 4: Success */}
+          {/* Step 3: Success */}
           {step === 'success' && (
             <Card className="px-8 py-10 bg-card border-border text-center space-y-6">
               <div className="flex justify-center">
