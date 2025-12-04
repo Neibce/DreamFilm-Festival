@@ -160,17 +160,21 @@ export default function AwardAdmin() {
             )}
 
             <div className="space-y-4 mb-6">
-                <div className="p-5 rounded-lg w-full bg-blue-500/20">
-                    <span className="">
+                <div className="p-5 rounded-lg w-full bg-blue-500/20 flex items-center relative">
+                    {/* 왼쪽 */}
+                    <span className="flex-1">
                         <p className="font-bold">&lt;최종 점수 산출 방식&gt;</p>
                         심사위원 평가(70%) + 관객 투표(30%)
                     </span>
-                </div>
-                <div className="p-5 rounded-lg w-full bg-pink-500/20">
-                    <span className="">
-                        <p className="font-bold">&lt;인기상 점수 산출 방식&gt;</p>
-                        관객 투표(100%)
-                    </span>
+
+                    {/* 구분선 + 두 번째 span 묶음 */}
+                    <div className="absolute left-4/7 -translate-x-1/2 flex items-center p-15 gap-6">
+                        <div className="w-px h-10 bg-white/40" />
+                        <span>
+                            <p className="font-bold">&lt;인기상 점수 산출 방식&gt;</p>
+                            관객 투표(100%)
+                        </span>
+                    </div>
                 </div>
             </div>
 

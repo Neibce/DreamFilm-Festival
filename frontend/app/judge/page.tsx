@@ -7,7 +7,8 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEffect, useMemo, useState } from 'react'
-import { Star, CheckCircle, CircleEllipsis, Clock } from 'lucide-react'
+import { Star, CheckCircle, CircleEllipsis, Clock, Edit } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 
 type FilmScore = {
   creativity: number
@@ -25,6 +26,7 @@ interface JudgingFilm {
   dreamDescription: string
   status: '심사 대기' | '심사 완료'
   scores?: FilmScore
+  review?: string
 }
 
 const MOCK_JUDGING_FILMS: JudgingFilm[] = [
@@ -61,7 +63,8 @@ const MOCK_JUDGING_FILMS: JudgingFilm[] = [
     image: '/sci-fi-movie-poster.png',
     dreamDescription: 'Two souls communicating through digital dreams',
     status: '심사 완료',
-    scores: { creativity: 5, execution: 4, emotional_impact: 5, storytelling: 4 }
+    scores: { creativity: 5, execution: 4, emotional_impact: 5, storytelling: 4 },
+    review: '독창적인 아이디어와 감동적인 연출이 돋보이는 작품입니다.'
   },
   {
     id: '3',
@@ -99,6 +102,8 @@ export default function JudgePage() {
     emotional_impact: 0,
     storytelling: 0
   })
+  const [currentReview, setCurrentReview] = useState('')
+  const [isEditingCompleted, setIsEditingCompleted] = useState(false)
 
   useEffect(() => {
     const finalized = localStorage.getItem('festivalFinalized') === 'true'
@@ -116,7 +121,7 @@ export default function JudgePage() {
   const pendingCount = films.filter(f => f.status === '심사 대기').length
   const completedCount = films.filter(f => f.status === '심사 완료').length
   const canSubmitScores =
-    selectedFilm?.status === '심사 대기' &&
+    selectedFilm &&
     Object.values(currentScores).every(score => score > 0)
 
   useEffect(() => {
@@ -130,6 +135,20 @@ export default function JudgePage() {
     }
   }, [filteredFilms, selectedFilmId])
 
+  useEffect(() => {
+    if (selectedFilm) {
+      if (selectedFilm.status === '심사 완료' && selectedFilm.scores) {
+        setCurrentScores(selectedFilm.scores)
+        setCurrentReview(selectedFilm.review || '')
+        setIsEditingCompleted(false)
+      } else {
+        setCurrentScores({ creativity: 0, execution: 0, emotional_impact: 0, storytelling: 0 })
+        setCurrentReview('')
+        setIsEditingCompleted(false)
+      }
+    }
+  }, [selectedFilm])
+
   const handleScoreChange = (criterion: keyof FilmScore, score: number) => {
     setCurrentScores(prev => ({
       ...prev,
@@ -138,15 +157,21 @@ export default function JudgePage() {
   }
 
   const handleSubmitScores = () => {
-    if (!selectedFilm || selectedFilm.status !== '심사 대기' || !canSubmitScores || isFestivalFinalized) return
+    if (!selectedFilm || !canSubmitScores || isFestivalFinalized) return
     setFilms(films.map(f => 
       f.id === selectedFilmId 
-        ? { ...f, status: '심사 완료', scores: currentScores }
+        ? { ...f, status: '심사 완료', scores: currentScores, review: currentReview }
         : f
     ))
     setCurrentScores({ creativity: 0, execution: 0, emotional_impact: 0, storytelling: 0 })
+    setCurrentReview('')
+    setIsEditingCompleted(false)
     const nextPending = films.find(f => f.status === '심사 대기' && f.id !== selectedFilmId)
     if (nextPending) setSelectedFilmId(nextPending.id)
+  }
+
+  const handleEditCompleted = () => {
+    setIsEditingCompleted(true)
   }
 
   const scoreArray = [
@@ -172,7 +197,7 @@ export default function JudgePage() {
               심사 대시보드
             </h1>
             <p className="text-lg text-muted-foreground text-balance">
-              출품된 영화들을 심사해 주세요. 귀하의 심사를 통해 영화제 수상작을 선정합니다.
+              영화제 종료 전까지 출품된 영화들을 심사해 주세요. 귀하의 심사를 통해 영화제 수상작을 선정합니다.
             </p>
             {isFestivalFinalized && (
               <div className="mt-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
@@ -181,6 +206,12 @@ export default function JudgePage() {
                 </p>
               </div>
             )}
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
+              <Clock className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">
+                영화제 기간: 2025년 12월 1일 - 12월 31일
+              </span>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -247,7 +278,7 @@ export default function JudgePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Film List */}
             <div className="lg:col-span-1">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Films to Review</h2>
+              <h2 className="text-lg font-bold text-foreground mb-4">출품작 목록</h2>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {filteredFilms.length === 0 ? (
                   <div className="p-6 border border-dashed border-border rounded-lg text-center text-sm text-muted-foreground">
@@ -305,7 +336,6 @@ export default function JudgePage() {
                     </div>
 
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2 uppercase font-semibold">Dream Description</p>
                       <p className="text-foreground">{selectedFilm.dreamDescription}</p>
                     </div>
                   </div>
@@ -356,7 +386,24 @@ export default function JudgePage() {
                           ))}
                         </div>
 
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-foreground font-semibold mb-2 block">심사 리뷰</label>
+                            <Textarea
+                              value={currentReview}
+                              onChange={(e) => setCurrentReview(e.target.value)}
+                              placeholder="영화에 대한 리뷰를 작성해주세요 (선택사항)"
+                              className="min-h-[120px] resize-none bg-background border-border text-foreground"
+                            />
+                          </div>
+                        </div>
+
                         <div className="pt-4 space-y-2">
+                          {!canSubmitScores && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              모든 항목에 별점을 입력해야 심사를 확정할 수 있어요.
+                            </p>
+                          )}
                           <Button
                             onClick={handleSubmitScores}
                             disabled={!canSubmitScores}
@@ -364,11 +411,6 @@ export default function JudgePage() {
                           >
                             심사 제출하기
                           </Button>
-                          {!canSubmitScores && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              모든 항목에 별점을 입력해야 심사를 확정할 수 있어요.
-                            </p>
-                          )}
                         </div>
                       </>
                     )}
@@ -377,41 +419,180 @@ export default function JudgePage() {
 
                 {selectedFilm.status === '심사 완료' && (
                   <Card className="p-6 bg-card border-border space-y-6">
-                    <h3 className="text-lg font-bold text-foreground">Your Scores</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold text-foreground">심사 점수</h3>
+                      {!isFestivalFinalized && !isEditingCompleted && (
+                        <Button
+                          onClick={handleEditCompleted}
+                          variant="outline"
+                          size="sm"
+                          className="border-primary text-primary hover:bg-primary/10"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          수정하기
+                        </Button>
+                      )}
+                    </div>
 
-                    {selectedFilm.scores && (
-                      <div className="space-y-4">
-                        {Object.entries(selectedFilm.scores).map(([key, value]) => {
-                          const label = SCORE_LABELS[key as keyof FilmScore] ?? key
-                          return (
-                            <div key={key} className="flex items-center justify-between pb-4 border-b border-border">
-                              <span className="text-foreground font-semibold">
-                                {label}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <div className="flex">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`w-4 h-4 ${
-                                        i < value ? 'fill-yellow-400 text-yellow-400' : 'text-muted'
-                                      }`}
-                                    />
-                                  ))}
+                    {isFestivalFinalized ? (
+                      <>
+                        {selectedFilm.scores && (
+                          <div className="space-y-4">
+                            {Object.entries(selectedFilm.scores).map(([key, value]) => {
+                              const label = SCORE_LABELS[key as keyof FilmScore] ?? key
+                              return (
+                                <div key={key} className="flex items-center justify-between pb-4 border-b border-border">
+                                  <span className="text-foreground font-semibold">
+                                    {label}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-4 h-4 ${
+                                            i < value ? 'fill-yellow-400 text-yellow-400' : 'text-muted'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-foreground font-bold">{value}/5</span>
+                                  </div>
                                 </div>
-                                <span className="text-foreground font-bold">{value}/5</span>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {selectedFilm.review && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground mb-2">심사 리뷰</h4>
+                            <p className="text-sm text-muted-foreground bg-background/50 p-4 rounded-lg border border-border">
+                              {selectedFilm.review}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                          <p className="text-sm text-yellow-500">
+                            🏆 영화제가 종료되어 심사를 수정할 수 없습니다.
+                          </p>
+                        </div>
+                      </>
+                    ) : isEditingCompleted ? (
+                      <>
+                        <div className="space-y-6">
+                          {scoreArray.map((item) => (
+                            <div key={item.criterion}>
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-foreground font-semibold">{item.criterion}</label>
+                                <span className="text-primary font-bold text-lg">{item.score}/5</span>
+                              </div>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map(score => (
+                                  <button
+                                    key={score}
+                                    onClick={() => item.setSc(score)}
+                                    className={`flex-1 py-3 rounded-lg transition border ${
+                                      item.score >= score
+                                        ? 'bg-primary border-primary text-primary-foreground'
+                                        : 'bg-background border-border text-muted-foreground hover:border-primary'
+                                    }`}
+                                  >
+                                    <Star className={`w-4 h-4 mx-auto ${item.score >= score ? 'fill-current' : ''}`} />
+                                  </button>
+                                ))}
                               </div>
                             </div>
-                          )
-                        })}
-                      </div>
-                    )}
+                          ))}
+                        </div>
 
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                      <p className="text-sm text-green-400">
-                        ✓ You have successfully scored this film.
-                      </p>
-                    </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-foreground font-semibold mb-2 block">심사 리뷰</label>
+                            <Textarea
+                              value={currentReview}
+                              onChange={(e) => setCurrentReview(e.target.value)}
+                              placeholder="영화에 대한 리뷰를 작성해주세요 (선택사항)"
+                              className="min-h-[120px] resize-none bg-background border-border text-foreground"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-4 space-y-2">
+                          {!canSubmitScores && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              모든 항목에 별점을 입력해야 심사를 확정할 수 있어요.
+                            </p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                setIsEditingCompleted(false)
+                                if (selectedFilm.scores) setCurrentScores(selectedFilm.scores)
+                                setCurrentReview(selectedFilm.review || '')
+                              }}
+                              variant="outline"
+                              className="flex-1"
+                            >
+                              취소
+                            </Button>
+                            <Button
+                              onClick={handleSubmitScores}
+                              disabled={!canSubmitScores}
+                              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              수정 완료
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {selectedFilm.scores && (
+                          <div className="space-y-4">
+                            {Object.entries(selectedFilm.scores).map(([key, value]) => {
+                              const label = SCORE_LABELS[key as keyof FilmScore] ?? key
+                              return (
+                                <div key={key} className="flex items-center justify-between pb-4 border-b border-border">
+                                  <span className="text-foreground font-semibold">
+                                    {label}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-4 h-4 ${
+                                            i < value ? 'fill-yellow-400 text-yellow-400' : 'text-muted'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="text-foreground font-bold">{value}/5</span>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {selectedFilm.review && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-foreground mb-2">심사 리뷰</h4>
+                            <p className="text-sm text-muted-foreground bg-background/50 p-4 rounded-lg border border-border">
+                              {selectedFilm.review}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                          <p className="text-sm text-green-400">
+                            ✓ 심사가 완료되었습니다. 영화제 종료 전까지 수정할 수 있습니다.
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </Card>
                 )}
               </div>

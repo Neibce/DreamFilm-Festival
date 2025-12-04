@@ -47,8 +47,8 @@ export default function AdminPage() {
             ))}
           </div>
           <div className="mt-10 h-auto">
-              <AdminContent selectedMenu={selectedMenu}/>
-            </div>
+            <AdminContent selectedMenu={selectedMenu}/>
+          </div>
         </div>
       </section>
       <Footer />

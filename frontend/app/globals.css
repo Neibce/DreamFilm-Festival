@@ -136,6 +136,13 @@
   .dark .hover-glow:hover {
     box-shadow: 0 0 30px oklch(0.985 0 0 / 0.3);
   }
+  
+  .hover-glow-yellow {
+    @apply transition-all duration-300 hover:scale-[1.02];
+  }
+  .hover-glow-yellow:hover {
+    box-shadow: 0 0 30px rgb(234 179 8 / 0.4);
+  }
 }
 
 .font-clipartkorea {

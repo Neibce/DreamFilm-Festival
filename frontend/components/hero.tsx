@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 
 export function Hero() {
   return (
@@ -25,12 +26,16 @@ export function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button className="px-11 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition">
-                꿈 출품하기
-              </button>
-              <button className="px-10 py-3 border border-primary/50 text-primary rounded-lg font-semibold hover:bg-primary/5 transition">
-                작품 감상하기
-              </button>
+              <Link href="/submit">
+                <button className="px-11 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition">
+                  꿈 출품하기
+                </button>
+              </Link>
+              <Link href="/explore">
+                <button className="px-10 py-3 border border-primary/50 text-primary rounded-lg font-semibold hover:bg-primary/5 transition">
+                  작품 감상하기
+                </button>
+              </Link>
             </div>
 
             <div className="flex gap-12 text-sm text-muted-foreground pt-4">
