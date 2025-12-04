@@ -121,7 +121,7 @@ export default function ExplorePage() {
             새롭게 창조된 영화들을 만나보세요
           </h1>
           <p className="text-lg text-muted-foreground mb-8 text-balance">
-          실제 꿈에서 탄생한 독창적인 작품들을 감상하고, 평가하여 영화제 수상작 선정에 기여해보세요.
+            실제 꿈에서 탄생한 독창적인 작품들을 감상하고, 평가하여 영화제 수상작 선정에 기여해보세요.
           </p>
 
           {/* Search and Filter */}
@@ -153,7 +153,7 @@ export default function ExplorePage() {
       </section>
 
       {/* Films Grid */}
-      <section className="py-12 px-4 md:px-6 lg:px-8">
+      <section className="py-8 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {filteredFilms.length === 0 ? (
             <div className="text-center py-12">
@@ -164,10 +164,10 @@ export default function ExplorePage() {
               {filteredFilms.map((film) => (
                 <Link key={film.id} href={`/films/${film.id}`}>
                   <Card
-                    className="group overflow-hidden hover:border-primary transition cursor-pointer bg-card border-border h-full hover:shadow-lg hover:shadow-primary/50 hover:ring-2 hover:ring-primary/20"
+                    className="pt-0 pb-2 group overflow-hidden hover:border-primary transition cursor-pointer bg-card border-border h-full hover:shadow-lg hover:shadow-primary/50 hover:ring-2 hover:ring-primary/20"
                   >
                     {/* Film Image */}
-                    <div className="relative h-64 overflow-hidden bg-muted">
+                    <div className="relative h-90 overflow-hidden bg-muted">
                       <img
                         src={film.image || "/placeholder.svg"}
                         alt={film.title}
@@ -185,18 +185,6 @@ export default function ExplorePage() {
                           {film.status.charAt(0).toUpperCase() + film.status.slice(1)}
                         </Badge>
                       </div>
-
-                      {/* Like Button */}
-                      <button
-                        onClick={() => toggleFavorite(film.id)}
-                        className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition"
-                      >
-                        <div className={`p-2 rounded-full ${
-                          favorited.has(film.id) ? 'bg-red-500' : 'bg-background/80'
-                        } hover:bg-red-500 transition`}>
-                          <Heart className={`w-5 h-5 ${favorited.has(film.id) ? 'fill-white' : 'text-foreground'}`} />
-                        </div>
-                      </button>
                     </div>
 
                     {/* Film Info */}
@@ -208,12 +196,12 @@ export default function ExplorePage() {
                         <p className="text-sm text-muted-foreground">{film.director}</p>
                       </div>
 
-                      <p className="text-xs text-muted-foreground line-clamp-2">{film.dreamSummary}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 h-8">{film.dreamSummary}</p>
 
                       {/* Rating */}
                       {film.status === '승인 완료' && (
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center">
+                        <div className="flex items-center gap-2 justify-between items-end">
+                          <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
@@ -224,23 +212,17 @@ export default function ExplorePage() {
                                 }`}
                               />
                             ))}
+                            <span className="text-sm text-foreground font-medium">{film.rating}</span>
+                            <span className="text-xs text-muted-foreground">({film.votes})</span>
                           </div>
-                          <span className="text-sm text-foreground font-medium">{film.rating}</span>
-                          <span className="text-xs text-muted-foreground">({film.votes})</span>
+                          <div className="flex gap-3 text-xs text-muted-foreground border-t border-border">
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              {film.reviews}
+                            </div>
+                          </div>
                         </div>
                       )}
-
-                      {/* Stats */}
-                      <div className="flex gap-3 text-xs text-muted-foreground pt-2 border-t border-border">
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-3.5 h-3.5" />
-                          {favorited.has(film.id) ? '1+' : '0'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          {film.reviews}
-                        </div>
-                      </div>
                     </div>
                   </Card>
                 </Link>
