@@ -3,119 +3,124 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { useState } from 'react'
-import { Heart, Star, MessageCircle, Download, Share2, BadgeInfo, User, Users, Clock, Film } from 'lucide-react'
+import { useState, use, useMemo } from 'react'
+import { User } from 'lucide-react'
 import Link from 'next/link'
+import { MOCK_FILMS } from '@/app/explore/page'
+import { MOCK_FILM, MOCK_REVIEWS } from '../mockData'
+import { Film, Review, SortType } from '../types'
+import { ReviewCard } from '../components/ReviewCard'
+import { WriteReviewModal } from '../components/WriteReviewModal'
+import { AllReviewsModal } from '../components/AllReviewsModal'
+import { FilmStats } from '../components/FilmStats'
+import { RelatedFilms } from '../components/RelatedFilms'
 
-interface Review {
-  id: string
-  author: string
-  rating: number
-  text: string
-  date: string
-  helpful: number
-}
-
-interface Film {
-  id: string
-  title: string
-  director: string
-  genre: string
-  status: 'approved' | 'pending' | 'rejected'
-  image: string
-  rating: number
-  votes: number
-  reviews: number
-  dreamTheme: string
-  releaseDate?: string
-  runtime?: string
-  description?: string
-  screenplay?: string
-  cinematography?: string
-  awards?: string
-}
-
-const MOCK_FILM: Film = {
-  id: '1',
-  title: 'The Midnight Garden',
-  director: 'Sarah Chen',
-  genre: 'Fantasy Drama',
-  status: 'approved',
-  image: '/fantasy-film-poster.jpg',
-  rating: 4.8,
-  votes: 1240,
-  reviews: 89,
-  dreamTheme: 'A surreal garden that exists between dreams and reality',
-  releaseDate: '2024-06-15',
-  runtime: '118 minutes',
-  description: 'In the depths of a troubled mind lies a garden that blooms only at midnight. Follow Maya, a young artist struggling with reality, as she discovers a portal to a world where her paintings come to life. What begins as an escape becomes a journey of self-discovery and healing.',
-  screenplay: 'Sarah Chen',
-  cinematography: 'Gemini',
-  awards: 'Festival Award for Outstanding Vision'
-}
-
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: '1',
-    author: 'Alex Thompson',
-    rating: 5,
-    text: 'Absolutely breathtaking! The way the dream sequences transition into reality is seamless. A masterpiece of modern filmmaking.',
-    date: '2024-06-20',
-    helpful: 234
-  },
-  {
-    id: '2',
-    author: 'Emma Wilson',
-    rating: 5,
-    text: 'The cinematography is stunning. Every frame feels like a painting. I was completely immersed in this world.',
-    date: '2024-06-18',
-    helpful: 189
-  },
-  {
-    id: '3',
-    author: 'Marcus Johnson',
-    rating: 4,
-    text: 'Great storytelling with minor pacing issues in the second act. Overall a very emotional and impactful experience.',
-    date: '2024-06-16',
-    helpful: 127
-  },
-]
-
-const RELATED_FILMS = [
-  {
-    id: '2',
-    title: 'Echoes in the Cloud',
-    director: 'James Rivera',
-    image: '/sci-fi-movie-poster.png',
-    rating: 4.6,
-  },
-  {
-    id: '3',
-    title: 'The Lost Kingdom',
-    director: 'Emma Thompson',
-    image: '/adventure-fantasy-film.jpg',
-    rating: 4.7,
-  },
-  {
-    id: '4',
-    title: 'Neon Requiem',
-    director: 'Alex Kim',
-    image: '/cyberpunk-movie-poster.png',
-    rating: 4.5,
-  },
-]
-
-export default function FilmDetailPage({ params }: { params: { id: string } }) {
-  const [isFavorited, setIsFavorited] = useState(false)
+export default function FilmDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const [helpful, setHelpful] = useState<Record<string, boolean>>({})
+  const [sortType, setSortType] = useState<SortType>('helpful')
+
+  const [filmData, setFilmData] = useState(MOCK_FILM)
+  const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS)
+
+  const [isWriteDialogOpen, setIsWriteDialogOpen] = useState(false)
+  const [newRating, setNewRating] = useState(0)
+  const [hoveredRating, setHoveredRating] = useState(0)
+  const [newReviewText, setNewReviewText] = useState('')
+
+  const relatedFilms = useMemo(() => {
+    return MOCK_FILMS
+      .filter(film => 
+        film.genre === filmData.genre &&
+        film.id !== filmData.id &&
+        film.status === '승인 완료'
+      )
+      .sort((a, b) => parseInt(b.id) - parseInt(a.id))
+      .slice(0, 3)
+  }, [filmData])
+
+  const sortedReviews = useMemo(() => {
+    const reviewsCopy = [...reviews]
+    switch (sortType) {
+      case 'helpful':
+        return reviewsCopy.sort((a, b) => b.helpful - a.helpful)
+      case 'recent':
+        return reviewsCopy.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      case 'rating':
+        return reviewsCopy.sort((a, b) => b.rating - a.rating)
+      default:
+        return reviewsCopy
+    }
+  }, [reviews, sortType])
 
   const toggleHelpful = (reviewId: string) => {
     setHelpful(prev => ({
       ...prev,
       [reviewId]: !prev[reviewId]
     }))
+  }
+
+  const handleSubmitReview = () => {
+    if (newRating === 0) {
+      alert('평점을 선택해주세요!')
+      return
+    }
+
+    const hasReviewText = newReviewText.trim().length > 0
+
+    const totalRating = filmData.rating * filmData.votes + newRating
+    const newVotes = filmData.votes + 1
+    const newAverageRating = parseFloat((totalRating / newVotes).toFixed(1))
+
+    if (hasReviewText) {
+      const newReview: Review = {
+        id: String(Date.now()),
+        author: '현재 사용자',
+        rating: newRating,
+        text: newReviewText,
+        date: new Date().toISOString().split('T')[0],
+        helpful: 0
+      }
+
+      setReviews(prev => [newReview, ...prev])
+      
+      setFilmData(prev => ({
+        ...prev,
+        rating: newAverageRating,
+        votes: newVotes,
+        reviews: prev.reviews + 1
+      }))
+
+      alert('평점과 리뷰가 등록되었습니다!')
+    } else {
+      setFilmData(prev => ({
+        ...prev,
+        rating: newAverageRating,
+        votes: newVotes
+      }))
+
+      alert('평점이 등록되었습니다!')
+    }
+
+    console.log('제출된 데이터:', {
+      rating: newRating,
+      text: hasReviewText ? newReviewText : null,
+      filmId: id,
+      type: hasReviewText ? '평점+리뷰' : '평점만'
+    })
+
+    setNewRating(0)
+    setNewReviewText('')
+    setHoveredRating(0)
+    setIsWriteDialogOpen(false)
+  }
+
+  const handleCancelReview = () => {
+    setIsWriteDialogOpen(false)
+    setNewRating(0)
+    setNewReviewText('')
+    setHoveredRating(0)
   }
 
   return (
@@ -126,7 +131,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
       <section className="relative h-96 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${MOCK_FILM.image})` }}
+          style={{ backgroundImage: `url(${filmData.image})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
 
@@ -134,7 +139,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
         <div className="relative h-full flex flex-col justify-end p-6 md:p-8 lg:p-12">
           <div className="max-w-4xl">
             <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-2 text-balance">
-              {MOCK_FILM.title}
+              {filmData.title}
             </h1>
           </div>
         </div>
@@ -147,178 +152,84 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
             {/* Left Column - Main Info */}
             <div className="lg:col-span-2 space-y-8">
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-4">
-                <Card className="p-4 bg-card border-border justify-center items-center text-center">
-                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-2xl font-bold text-foreground">{MOCK_FILM.rating}</span>
-                  <p className="text-xs text-muted-foreground">평균 총점 <br/><span className='text-[10px]'>(총 {MOCK_FILM.votes}개)</span></p>
-                </Card>
-                <Card className="p-4 bg-card border-border text-center">
-                  <MessageCircle className="w-5 h-5 mx-auto mb-2 text-accent" />
-                  <p className="text-2xl font-bold text-foreground">{MOCK_FILM.reviews}</p>
-                  <p className="text-xs text-muted-foreground">리뷰</p>
-                </Card>
-                <Card className="p-4 bg-card border-border text-center">
-                  <BadgeInfo className="w-5 h-5 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold text-foreground">{MOCK_FILM.reviews}</p>
-                  <p className="text-xs text-muted-foreground">작품 정보</p>
-                </Card>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setIsFavorited(!isFavorited)}
-                  variant={isFavorited ? "default" : "outline"}
-                  className={`gap-2 ${isFavorited ? 'bg-red-500 hover:bg-red-600' : 'border-border'}`}
-                >
-                  <Heart className={`w-5 h-5 ${isFavorited ? 'fill-white' : ''}`} />
-                  좋아요
-                </Button>
-                <Button variant="outline" className="gap-2 border-border">
-                  <Share2 className="w-5 h-5" />
-                  공유
-                </Button>
-              </div>
+              <FilmStats film={filmData} />
 
               {/* Dream Theme */}
               <Card className="p-6 bg-card border-border">
                 <h2 className="text-2xl font-bold text-foreground mb-3">꿈 주제</h2>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  {MOCK_FILM.dreamTheme}
+                  {filmData.dreamTheme}
                 </p>
               </Card>
 
               {/* Full Description */}
               <Card className="p-6 bg-card border-border">
-                <h2 className="text-2xl font-bold text-foreground mb-3">시놉시스</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-3">시나리오</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  {MOCK_FILM.description}
+                  {filmData.description}
                 </p>
-              </Card>
-
-              {/* Crew & Production */}
-              <Card className="p-6 bg-card border-border">
-                <h2 className="text-2xl font-bold text-foreground mb-4">제작진</h2>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">감독</p>
-                    <p className="text-lg text-foreground font-medium">{MOCK_FILM.director}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">각본</p>
-                    <p className="text-lg text-foreground font-medium">{MOCK_FILM.screenplay}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">포스터 제작</p>
-                    <p className="text-lg text-foreground font-medium">{MOCK_FILM.cinematography}</p>
-                  </div>
-                </div>
               </Card>
 
               {/* Reviews Section */}
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground">리뷰 ({MOCK_FILM.reviews})</h2>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                  <h2 className="text-2xl font-bold text-foreground">리뷰 ({filmData.reviews})</h2>
+                  <div className="flex gap-2 flex-wrap">
+                    <WriteReviewModal
+                      filmTitle={filmData.title}
+                      isOpen={isWriteDialogOpen}
+                      onOpenChange={setIsWriteDialogOpen}
+                      rating={newRating}
+                      hoveredRating={hoveredRating}
+                      reviewText={newReviewText}
+                      onRatingChange={setNewRating}
+                      onHoveredRatingChange={setHoveredRating}
+                      onReviewTextChange={setNewReviewText}
+                      onSubmit={handleSubmitReview}
+                      onCancel={handleCancelReview}
+                    />
+                    <AllReviewsModal
+                      filmTitle={filmData.title}
+                      reviews={sortedReviews}
+                      sortType={sortType}
+                      helpful={helpful}
+                      onSortChange={setSortType}
+                      onToggleHelpful={toggleHelpful}
+                    />
+                  </div>
+                </div>
 
-                {MOCK_REVIEWS.map((review) => (
-                  <Card key={review.id} className="p-6 bg-card border-border">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-bold text-foreground">{review.author}</h3>
-                        <p className="text-sm text-muted-foreground">{review.date}</p>
-                      </div>
-                      <div className="flex gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-muted'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-foreground leading-relaxed mb-4">{review.text}</p>
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => toggleHelpful(review.id)}
-                        className={`text-sm px-3 py-1 rounded transition ${
-                          helpful[review.id]
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:bg-border'
-                        }`}
-                      >
-                        👍 ({review.helpful + (helpful[review.id] ? 1 : 0)})
-                      </button>
-                    </div>
-                  </Card>
+                {sortedReviews.slice(0, 3).map((review) => (
+                  <ReviewCard
+                    key={review.id}
+                    review={review}
+                    helpful={helpful}
+                    onToggleHelpful={toggleHelpful}
+                  />
                 ))}
               </div>
             </div>
 
             {/* Right Column - Sidebar */}
             <div className="space-y-6">
-              {/* Director Info Card */}
               <Card className="p-6 bg-card border-border">
                 <div className="text-center">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mx-auto mb-3 flex items-center justify-center">
                     <User className="w-8 h-8 text-foreground" />
                   </div>
-                  <h4 className="font-bold text-foreground mb-1">{MOCK_FILM.director}</h4>
-                  <p className="text-sm text-muted-foreground mb-4">감독 및 각본</p>
-                  <Button variant="outline" className="w-full border-border">
-                    프로필 보기
-                  </Button>
+                  <h4 className="font-bold text-foreground mb-4">{filmData.director}</h4>
+                  <Link href={`/director/${encodeURIComponent(filmData.director)}`}>
+                    <Button variant="outline" className="w-full border-border">
+                      프로필 보기
+                    </Button>
+                  </Link>
                 </div>
               </Card>
             </div>
           </div>
-
-          {/* Related Films Section */}
-          <section className="mt-16 pt-12 border-t border-border">
-            <h2 className="text-3xl font-bold text-foreground mb-6">관련된 작품들</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {RELATED_FILMS.map((film) => (
-                <Link key={film.id} href={`/films/${film.id}`}>
-                  <Card className="group overflow-hidden hover:border-primary transition cursor-pointer bg-card border-border h-full">
-                    <div className="relative h-48 overflow-hidden bg-muted">
-                      <img
-                        src={film.image || "/placeholder.svg"}
-                        alt={film.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
-                      />
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <h3 className="font-bold text-foreground group-hover:text-primary transition line-clamp-2">
-                        {film.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{film.director}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3.5 h-3.5 ${
-                                i < Math.floor(film.rating)
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-muted'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-foreground font-medium">{film.rating}</span>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </section>
+          <RelatedFilms films={relatedFilms} />
         </div>
       </section>
-
       <Footer />
     </main>
   )
