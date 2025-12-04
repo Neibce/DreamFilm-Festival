@@ -31,7 +31,6 @@ export default function SignupPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (isFormValid) {
-      // TODO: 회원가입 API 호출
       console.log('회원가입 시도:', formData)
       alert('회원가입이 완료되었습니다!')
     }

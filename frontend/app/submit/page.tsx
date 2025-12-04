@@ -39,7 +39,7 @@ export default function SubmitPage() {
     <main className="min-h-screen bg-background">
       <Header />
 
-      <section className="pt-32 pb-12 px-4 md:px-6 lg:px-8">
+      <section className="pt-15 pb-12 px-4 md:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-12">
