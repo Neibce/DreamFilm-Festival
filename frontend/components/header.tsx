@@ -7,7 +7,7 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -31,6 +31,9 @@ export function Header() {
             </Link>
             <Link href="/judge" className="text-muted-foreground hover:text-foreground transition">
               상영작 평가
+            </Link>
+            <Link href="/awards" className="text-muted-foreground hover:text-foreground transition">
+              수상작
             </Link>
           </div>
 
@@ -67,13 +70,16 @@ export function Header() {
         {isOpen && (
           <div className="md:hidden pb-4 space-y-3">
             <Link href="/explore" className="block text-muted-foreground hover:text-foreground transition py-2">
-              Explore Films
+              상영작 목록
             </Link>
             <Link href="/submit" className="block text-muted-foreground hover:text-foreground transition py-2">
-              Submit Dream
+              출품작 제출
             </Link>
             <Link href="/judge" className="block text-muted-foreground hover:text-foreground transition py-2">
-              Judge Films
+              상영작 평가
+            </Link>
+            <Link href="/awards" className="block text-muted-foreground hover:text-foreground transition py-2">
+              수상작
             </Link>
             <div className="flex gap-3 pt-2">
               <Link
