@@ -10,6 +10,7 @@ export const MOCK_FILM: Film = {
   rating: 4.8,
   votes: 1240,
   reviews: 89,
+  likes: 1240,
   dreamTheme: 'A surreal garden that exists between dreams and reality',
   releaseDate: '2024-06-15',
   runtime: '118 minutes',

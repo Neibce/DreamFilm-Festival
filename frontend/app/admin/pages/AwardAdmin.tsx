@@ -12,8 +12,7 @@ interface AwardFilm {
     title: string
     director: string
     judgeAverageScore: number // 심사위원 평균 점수 (5점 만점)
-    audienceRating: number // 관객 투표 점수 (5점 만점)
-    audienceVotes: number // 관객 투표 수
+    likes: number // 관객 투표 수
 }
 
 const MOCK_AWARD_FILMS: AwardFilm[] = [
@@ -22,40 +21,35 @@ const MOCK_AWARD_FILMS: AwardFilm[] = [
         title: '하늘을 나는 도시',
         director: '김윤영',
         judgeAverageScore: 4.5,
-        audienceRating: 4.8,
-        audienceVotes: 1240
+        likes: 1240
     },
     {
         id: '2',
         title: '기억을 파는 상점',
         director: '양준영',
         judgeAverageScore: 4.5,
-        audienceRating: 4.6,
-        audienceVotes: 956
+        likes: 956
     },
     {
         id: '3',
         title: '시간이 멈춘 카페',
         director: '임지우',
         judgeAverageScore: 4.2,
-        audienceRating: 4.7,
-        audienceVotes: 1120
+        likes: 1120
     },
     {
         id: '4',
         title: 'The Midnight Garden',
         director: 'Sarah Chen',
         judgeAverageScore: 4.3,
-        audienceRating: 4.5,
-        audienceVotes: 834
+        likes: 834
     },
     {
         id: '5',
         title: 'Echoes in the Cloud',
         director: 'James Rivera',
         judgeAverageScore: 4.0,
-        audienceRating: 4.4,
-        audienceVotes: 720
+        likes: 720
     }
 ]
 
@@ -70,10 +64,14 @@ export default function AwardAdmin() {
     }, [])
 
     const rankedFilms = useMemo(() => {
+        // 좋아요 수를 100점 만점으로 정규화하기 위해 최대값을 찾습니다
+        const maxLikes = Math.max(...MOCK_AWARD_FILMS.map(f => f.likes))
+        
         return MOCK_AWARD_FILMS
             .map(film => {
                 const judgeScore100 = film.judgeAverageScore * 20
-                const audienceScore100 = film.audienceRating * 20
+                // 좋아요 수를 100점 만점으로 정규화
+                const audienceScore100 = (film.likes / maxLikes) * 100
                 const finalScore = judgeScore100 * 0.7 + audienceScore100 * 0.3
 
                 return {
@@ -93,11 +91,9 @@ export default function AwardAdmin() {
     const popularityRankedFilms = useMemo(() => {
         return MOCK_AWARD_FILMS
             .map(film => {
-                const audienceScore100 = film.audienceRating * 20
                 return {
                     ...film,
-                    audienceScore100,
-                    popularityScore: audienceScore100
+                    popularityScore: film.likes
                 }
             })
             .sort((a, b) => b.popularityScore - a.popularityScore)
@@ -164,7 +160,7 @@ export default function AwardAdmin() {
                     {/* 왼쪽 */}
                     <span className="flex-1">
                         <p className="font-bold">&lt;최종 점수 산출 방식&gt;</p>
-                        심사위원 평가(70%) + 관객 투표(30%)
+                        심사위원 평가(70%) + 관객 투표 수(30%)
                     </span>
 
                     {/* 구분선 + 두 번째 span 묶음 */}
@@ -172,7 +168,7 @@ export default function AwardAdmin() {
                         <div className="w-px h-10 bg-white/40" />
                         <span>
                             <p className="font-bold">&lt;인기상 점수 산출 방식&gt;</p>
-                            관객 투표(100%)
+                            관객 투표 수(100%)
                         </span>
                     </div>
                 </div>
@@ -280,13 +276,13 @@ export default function AwardAdmin() {
                                 </p>
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground mb-1">관객 투표</p>
-                                <p className="text-2xl font-bold text-foreground">
-                                    {film.audienceRating.toFixed(1)}
-                                    <span className="text-base text-muted-foreground font-normal">/5.0</span>
+                                <p className="text-sm text-muted-foreground mb-1">관객 투표 수</p>
+                                <p className="text-2xl font-bold text-foreground flex items-center gap-2">
+                                    <Heart className="w-5 h-5 text-pink-500 fill-pink-500" />
+                                    {film.likes.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    ({film.audienceVotes.toLocaleString()}명 투표)
+                                    ({film.audienceScore100.toFixed(1)}점 환산)
                                 </p>
                             </div>
                             <div>
@@ -296,7 +292,7 @@ export default function AwardAdmin() {
                                     <span className="text-base text-muted-foreground font-normal">/100</span>
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    (심사위원 {film.judgeScore100.toFixed(1)} × 70% + 관객 {film.audienceScore100.toFixed(1)} × 30%)
+                                    (심사위원 {film.judgeScore100.toFixed(1)} × 70% + 좋아요 {film.audienceScore100.toFixed(1)} × 30%)
                                 </p>
                             </div>
                         </div>
@@ -348,23 +344,20 @@ export default function AwardAdmin() {
                             </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
                             <div>
-                                <p className="text-sm text-muted-foreground mb-1">관객 투표</p>
-                                <p className="text-2xl font-bold text-foreground">
-                                    {film.audienceRating.toFixed(1)}
-                                    <span className="text-base text-muted-foreground font-normal">/5.0</span>
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    ({film.audienceVotes.toLocaleString()}명 투표)
+                                <p className="text-sm text-muted-foreground mb-1">관객 투표 수</p>
+                                <p className="text-2xl font-bold text-foreground flex items-center gap-2">
+                                    <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
+                                    {film.likes.toLocaleString()}
                                 </p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground mb-1">인기상 점수</p>
-                                <p className="text-2xl font-bold text-pink-500">
-                                    {film.popularityScore.toFixed(1)}
-                                    <span className="text-base text-muted-foreground font-normal">/100</span>
+                                <p className="text-2xl font-bold text-pink-500 flex items-center gap-2">
+                                    <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
+                                    {film.popularityScore.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    (관객 투표 100%)
+                                    (투표 수 100%)
                                 </p>
                             </div>
                         </div>

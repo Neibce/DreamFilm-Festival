@@ -49,8 +49,8 @@ export default function DirectorProfilePage({ params }: { params: Promise<{ id: 
           {/* Director Header */}
           <div className="mb-12">
             <div className="flex items-center gap-6 mb-6">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <User className="w-12 h-12 text-foreground" />
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="w-12 h-12 text-primary" />
               </div>
               <div>
                 <h1 className="font-clipartkorea text-3xl md:text-[43px] font-extrabold text-foreground mb-2">

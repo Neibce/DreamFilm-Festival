@@ -4,8 +4,9 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { useState, use, useMemo } from 'react'
-import { User } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { useState, use, useMemo, useEffect } from 'react'
+import { User, Heart } from 'lucide-react'
 import Link from 'next/link'
 import { MOCK_FILMS } from '@/app/explore/page'
 import { MOCK_FILM, MOCK_REVIEWS } from '../mockData'
@@ -20,6 +21,19 @@ export default function FilmDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params)
   const [helpful, setHelpful] = useState<Record<string, boolean>>({})
   const [sortType, setSortType] = useState<SortType>('helpful')
+  const [isLiked, setIsLiked] = useState(false)
+  const [votedFilms, setVotedFilms] = useState<Set<string>>(new Set())
+
+  // Load voted films from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('votedFilms')
+    if (saved) {
+      const parsed: string[] = JSON.parse(saved)
+      const votedSet = new Set<string>(parsed)
+      setVotedFilms(votedSet)
+      setIsLiked(votedSet.has(id))
+    }
+  }, [id])
 
   const [filmData, setFilmData] = useState(MOCK_FILM)
   const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS)
@@ -59,6 +73,35 @@ export default function FilmDetailPage({ params }: { params: Promise<{ id: strin
       ...prev,
       [reviewId]: !prev[reviewId]
     }))
+  }
+
+  const toggleLike = () => {
+    const newVotedFilms = new Set(votedFilms)
+    
+    if (isLiked) {
+      // Remove vote
+      newVotedFilms.delete(id)
+      setIsLiked(false)
+      setFilmData(prev => ({
+        ...prev,
+        likes: prev.likes - 1
+      }))
+    } else {
+      // Add vote - check limit
+      if (newVotedFilms.size >= 3) {
+        alert('최대 3개 작품까지만 투표할 수 있습니다.')
+        return
+      }
+      newVotedFilms.add(id)
+      setIsLiked(true)
+      setFilmData(prev => ({
+        ...prev,
+        likes: prev.likes + 1
+      }))
+    }
+    
+    setVotedFilms(newVotedFilms)
+    localStorage.setItem('votedFilms', JSON.stringify(Array.from(newVotedFilms)))
   }
 
   const handleSubmitReview = () => {
@@ -214,8 +257,8 @@ export default function FilmDetailPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-6">
               <Card className="p-6 bg-card border-border">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mx-auto mb-3 flex items-center justify-center">
-                    <User className="w-8 h-8 text-foreground" />
+                  <div className="w-16 h-16 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">
+                    <User className="w-8 h-8 text-primary" />
                   </div>
                   <h4 className="font-bold text-foreground mb-4">{filmData.director}</h4>
                   <Link href={`/director/${encodeURIComponent(filmData.director)}`}>
@@ -224,6 +267,29 @@ export default function FilmDetailPage({ params }: { params: Promise<{ id: strin
                     </Button>
                   </Link>
                 </div>
+              </Card>
+              {/* Like Button Card */}
+              <Card className="p-6 bg-card border-border">
+                <div className="mb-3 text-center">
+                  <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 text-xs">
+                    투표 가능: {votedFilms.size}/3
+                  </Badge>
+                </div>
+                <Button
+                  onClick={toggleLike}
+                  className={`w-full h-14 text-lg font-semibold transition ${
+                    isLiked
+                      ? 'bg-pink-500 hover:bg-pink-600 text-white'
+                      : 'bg-card hover:bg-muted border-2 border-border hover:border-pink-500 text-foreground'
+                  }`}
+                >
+                  <Heart
+                    className={`w-6 h-6 mr-2 transition ${
+                      isLiked ? 'fill-white text-white' : 'text-foreground'
+                    }`}
+                  />
+                  {isLiked ? '투표 완료!' : '투표하기'}
+                </Button>
               </Card>
             </div>
           </div>

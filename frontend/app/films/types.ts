@@ -17,6 +17,7 @@ export interface Film {
   rating: number
   votes: number
   reviews: number
+  likes: number
   dreamTheme: string
   releaseDate?: string
   runtime?: string

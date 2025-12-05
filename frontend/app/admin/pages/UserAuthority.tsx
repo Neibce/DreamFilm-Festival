@@ -87,7 +87,7 @@ export default function UserAuthority() {
             case 'judge':
                 return { text: '심사위원', color: 'bg-blue-500/20 text-blue-500 border-blue-500/30' }
             case 'user':
-                return { text: '일반 사용자', color: 'bg-green-500/20 text-green-500 border-green-500/30' }
+                return { text: '일반 사용자', color: 'bg-white/20 text-white border-white/30' }
         }
     }
 
@@ -176,9 +176,9 @@ export default function UserAuthority() {
                 <Card className="p-6 bg-card border-border">
                     <div className="flex items-center justify-between mb-2">
                         <p className="text-sm text-muted-foreground">일반 사용자</p>
-                        <User className="w-5 h-5 text-green-500" />
+                        <User className="w-5 h-5 text-white" />
                     </div>
-                    <p className="text-3xl font-bold text-green-500">{roleStats.user}</p>
+                    <p className="text-3xl font-bold text-white">{roleStats.user}</p>
                 </Card>
             </div>
 
