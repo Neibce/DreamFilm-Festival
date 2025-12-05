@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { Star, MessageCircle, BadgeInfo } from 'lucide-react'
+import { Star, MessageCircle, BadgeInfo, Heart } from 'lucide-react'
 import { Film } from '../types'
 
 interface FilmStatsProps {
@@ -8,7 +8,7 @@ interface FilmStatsProps {
 
 export function FilmStats({ film }: FilmStatsProps) {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <Card className="p-4 bg-card border-border justify-center items-center text-center">
         <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
         <span className="text-2xl font-bold text-foreground">{film.rating}</span>
@@ -16,6 +16,11 @@ export function FilmStats({ film }: FilmStatsProps) {
           평균 총점 <br />
           <span className='text-[10px]'>(총 {film.votes}개)</span>
         </p>
+      </Card>
+      <Card className="p-4 bg-card border-border flex flex-col justify-center items-center text-center">
+        <Heart className="w-5 h-5 mx-auto mb-2 text-pink-500 fill-pink-500" />
+        <p className="text-2xl font-bold text-foreground">{film.likes.toLocaleString()}</p>
+        <p className="text-xs text-muted-foreground">투표 수</p>
       </Card>
       <Card className="p-4 bg-card border-border flex flex-col justify-center items-center text-center">
         <MessageCircle className="w-5 h-5 mx-auto mb-2 text-accent" />

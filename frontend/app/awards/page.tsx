@@ -15,8 +15,7 @@ interface AwardWinner {
     genre?: string
     image?: string
     judgeAverageScore: number
-    audienceRating: number
-    audienceVotes: number
+    likes: number
     finalScore: number
     dreamSummary?: string
 }
@@ -25,8 +24,7 @@ interface PopularityWinner {
     id: string
     title: string
     director: string
-    audienceRating: number
-    audienceVotes: number
+    likes: number
     popularityScore: number
 }
 
@@ -39,8 +37,7 @@ const MOCK_WINNERS: AwardWinner[] = [
         genre: '판타지',
         image: '/fantasy-film-poster.jpg',
         judgeAverageScore: 4.5,
-        audienceRating: 4.8,
-        audienceVotes: 1240,
+        likes: 1240,
         finalScore: 90.0,
         dreamSummary: '도시가 하늘로 떠오르는 초현실적인 세계를 그린 판타지 드라마'
     },
@@ -52,8 +49,7 @@ const MOCK_WINNERS: AwardWinner[] = [
         genre: 'SF',
         image: '/sci-fi-movie-poster.png',
         judgeAverageScore: 4.5,
-        audienceRating: 4.6,
-        audienceVotes: 956,
+        likes: 956,
         finalScore: 90.6,
         dreamSummary: '기억을 사고파는 미래 사회의 어두운 이면을 다룬 SF 스릴러'
     },
@@ -65,8 +61,7 @@ const MOCK_WINNERS: AwardWinner[] = [
         genre: '드라마',
         image: '/drama-film-poster.jpg',
         judgeAverageScore: 4.2,
-        audienceRating: 4.7,
-        audienceVotes: 1120,
+        likes: 1120,
         finalScore: 87.0,
         dreamSummary: '시간이 멈춘 카페에서 펼쳐지는 따뜻한 인간 드라마'
     }
@@ -122,7 +117,7 @@ export default function AwardsPage() {
                         수상작 발표
                     </h2>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                        심사위원 평가와 관객 투표를 종합하여 선정된 최종 수상작을 공개합니다.
+                        심사위원 평가와 관객 투표 수를 종합하여 선정된 최종 수상작을 공개합니다.
                     </p>
                 </div>
             </section>
@@ -180,12 +175,11 @@ export default function AwardsPage() {
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                            <Users className="w-4 h-4" />
-                                            관객 투표
+                                            <Heart className="w-4 h-4" />
+                                            관객 투표 수
                                         </div>
                                         <p className="text-3xl font-bold text-foreground">
-                                            {topWinner.audienceRating.toFixed(1)}
-                                            <span className="text-lg text-muted-foreground font-normal">/5.0</span>
+                                            {topWinner.likes.toLocaleString()}
                                         </p>
                                     </div>
                                 </div>
@@ -197,7 +191,7 @@ export default function AwardsPage() {
                                         <span className="text-xl text-muted-foreground font-normal">/100</span>
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-2">
-                                        심사위원 평가 70% + 관객 투표 30%
+                                        심사위원 평가 70% + 관객 투표 수 30%
                                     </p>
                                 </div>
                             </div>
@@ -260,19 +254,21 @@ export default function AwardsPage() {
 
                                         <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                                             <div>
-                                                <p className="text-xs text-muted-foreground mb-1">심사위원</p>
+                                                <p className="text-xs text-muted-foreground mb-1">심사위원 평가</p>
                                                 <p className="text-lg font-bold text-foreground">
                                                     {winner.judgeAverageScore.toFixed(1)}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-muted-foreground mb-1">관객</p>
+                                                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                                    관객 투표 수
+                                                </p>
                                                 <p className="text-lg font-bold text-foreground">
-                                                    {winner.audienceRating.toFixed(1)}
+                                                    {winner.likes.toLocaleString()}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-muted-foreground mb-1">최종</p>
+                                                <p className="text-xs text-muted-foreground mb-1">최종 점수</p>
                                                 <p className={`text-lg font-bold ${scoreTextClass}`}>
                                                     {winner.finalScore.toFixed(1)}
                                                 </p>
@@ -312,33 +308,17 @@ export default function AwardsPage() {
                                     <p className="text-xl text-muted-foreground">{popularityWinner.director}</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6 pt-6 max-w-md mx-auto">
-                                    <div className="text-center">
-                                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
-                                            <Users className="w-4 h-4" />
-                                            관객 투표
-                                        </div>
-                                        <p className="text-3xl font-bold text-foreground">
-                                            {popularityWinner.audienceRating.toFixed(1)}
-                                            <span className="text-lg text-muted-foreground font-normal">/5.0</span>
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            ({popularityWinner.audienceVotes.toLocaleString()}명)
-                                        </p>
+                                <div className="text-center pt-6">
+                                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
+                                        <Heart className="w-5 h-5 text-pink-500 fill-pink-500" />
+                                        관객 투표 수
                                     </div>
-                                    <div className="text-center">
-                                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
-                                            <Star className="w-4 h-4" />
-                                            인기상 점수
-                                        </div>
-                                        <p className="text-3xl font-bold text-pink-500">
-                                            {popularityWinner.popularityScore.toFixed(1)}
-                                            <span className="text-lg text-muted-foreground font-normal">/100</span>
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            관객 투표 100%
-                                        </p>
-                                    </div>
+                                    <p className="text-5xl font-bold text-pink-500">
+                                        {popularityWinner.likes.toLocaleString()}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-3">
+                                        투표 수 100%로 선정된 인기상 수상작
+                                    </p>
                                 </div>
                             </div>
                         </Card>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Heart, Star, MessageCircle, Filter } from 'lucide-react'
 import Link from 'next/link'
 
@@ -20,6 +20,7 @@ interface Film {
   rating: number
   votes: number
   reviews: number
+  likes: number
   dreamSummary: string
 }
 
@@ -34,6 +35,7 @@ export const MOCK_FILMS: Film[] = [
     rating: 4.8,
     votes: 1240,
     reviews: 89,
+    likes: 1240,
     dreamSummary: 'A surreal garden that exists between dreams and reality'
   },
   {
@@ -46,6 +48,7 @@ export const MOCK_FILMS: Film[] = [
     rating: 4.6,
     votes: 956,
     reviews: 72,
+    likes: 956,
     dreamSummary: 'Two souls communicating through digital dreams'
   },
   {
@@ -58,6 +61,7 @@ export const MOCK_FILMS: Film[] = [
     rating: 4.7,
     votes: 1120,
     reviews: 95,
+    likes: 1120,
     dreamSummary: 'An ancient civilization revealed through ancestral memories'
   },
   {
@@ -70,6 +74,7 @@ export const MOCK_FILMS: Film[] = [
     rating: 4.5,
     votes: 834,
     reviews: 61,
+    likes: 834,
     dreamSummary: 'A noir detective story in a digital dreamscape'
   },
   {
@@ -82,6 +87,7 @@ export const MOCK_FILMS: Film[] = [
     rating: 0,
     votes: 0,
     reviews: 0,
+    likes: 720,
     dreamSummary: 'A poetic journey through possible futures'
   },
 ]
@@ -90,6 +96,14 @@ export default function ExplorePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedGenre, setSelectedGenre] = useState<string>('전체')
   const [favorited, setFavorited] = useState<Set<string>>(new Set())
+
+  // Load favorited films from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('votedFilms')
+    if (saved) {
+      setFavorited(new Set(JSON.parse(saved)))
+    }
+  }, [])
 
   const genres = ['전체', '판타지', 'SF', '로맨스', '어드벤처', '드라마', '공포/스릴러']
 
@@ -105,9 +119,15 @@ export default function ExplorePage() {
     if (newFavorited.has(filmId)) {
       newFavorited.delete(filmId)
     } else {
+      // Check if user has already voted for 3 films
+      if (newFavorited.size >= 3) {
+        alert('최대 3개 작품까지만 투표할 수 있습니다.')
+        return
+      }
       newFavorited.add(filmId)
     }
     setFavorited(newFavorited)
+    localStorage.setItem('votedFilms', JSON.stringify(Array.from(newFavorited)))
   }
 
   return (
@@ -120,9 +140,15 @@ export default function ExplorePage() {
           <h1 className="font-clipartkorea text-3xl md:text-[43px] font-extrabold text-foreground mb-4 text-balance">
             새롭게 창조된 영화들을 만나보세요
           </h1>
-          <p className="text-lg text-muted-foreground mb-8 text-balance">
+          <p className="text-lg text-muted-foreground mb-2 text-balance">
             실제 꿈에서 탄생한 독창적인 작품들을 감상하고, 평가하여 영화제 수상작 선정에 기여해보세요.
           </p>
+          <div className="flex items-center gap-2 mb-8">
+            <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 mt-3 px-3 py-1">
+              <Heart className="w-3.5 h-3.5 mr-1.5" />
+              최대 3개 작품까지 투표 가능 ({favorited.size}/3)
+            </Badge>
+          </div>
 
           {/* Search and Filter */}
           <div className="space-y-4">
@@ -185,6 +211,23 @@ export default function ExplorePage() {
                           {film.status.charAt(0).toUpperCase() + film.status.slice(1)}
                         </Badge>
                       </div>
+
+                      {/* Like Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          toggleFavorite(film.id)
+                        }}
+                        className="absolute top-3 left-3 p-2 rounded-full bg-background/80 hover:bg-background transition backdrop-blur-sm"
+                      >
+                        <Heart
+                          className={`w-5 h-5 transition ${
+                            favorited.has(film.id)
+                              ? 'fill-pink-500 text-pink-500'
+                              : 'text-foreground'
+                          }`}
+                        />
+                      </button>
                     </div>
 
                     {/* Film Info */}
@@ -215,7 +258,11 @@ export default function ExplorePage() {
                             <span className="text-sm text-foreground font-medium">{film.rating}</span>
                             <span className="text-xs text-muted-foreground">({film.votes})</span>
                           </div>
-                          <div className="flex gap-3 text-xs text-muted-foreground border-t border-border">
+                          <div className="flex gap-3 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Heart className="w-3.5 h-3.5" />
+                              {film.likes}
+                            </div>
                             <div className="flex items-center gap-1">
                               <MessageCircle className="w-3.5 h-3.5" />
                               {film.reviews}
