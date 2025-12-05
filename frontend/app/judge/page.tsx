@@ -104,10 +104,22 @@ export default function JudgePage() {
   })
   const [currentReview, setCurrentReview] = useState('')
   const [isEditingCompleted, setIsEditingCompleted] = useState(false)
+  const [festivalPeriod, setFestivalPeriod] = useState<{ startDate: string; endDate: string } | null>(null)
 
   useEffect(() => {
     const finalized = localStorage.getItem('festivalFinalized') === 'true'
     setIsFestivalFinalized(finalized)
+    
+    // localStorage에서 영화제 기간 읽기
+    const savedPeriod = localStorage.getItem('currentFestivalPeriod')
+    if (savedPeriod) {
+      try {
+        const period = JSON.parse(savedPeriod)
+        setFestivalPeriod(period)
+      } catch (e) {
+        console.error('Failed to parse festival period:', e)
+      }
+    }
   }, [])
 
   const filteredFilms = useMemo(() => {
@@ -206,12 +218,21 @@ export default function JudgePage() {
                 </p>
               </div>
             )}
-            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
-              <Clock className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold text-primary">
-                영화제 기간: 2025년 12월 1일 - 12월 31일
-              </span>
-            </div>
+            {festivalPeriod && (() => {
+              const startDate = new Date(festivalPeriod.startDate)
+              const endDate = new Date(festivalPeriod.endDate)
+              const formatDate = (date: Date) => {
+                return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
+              }
+              return (
+                <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-primary">
+                    영화제 기간: {formatDate(startDate)} - {formatDate(endDate)}
+                  </span>
+                </div>
+              )
+            })()}
           </div>
 
           {/* Stats Cards */}

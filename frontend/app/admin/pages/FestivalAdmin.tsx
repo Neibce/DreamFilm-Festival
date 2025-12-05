@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,11 +13,8 @@ interface Festival {
     name: string
     year: number
     status: 'ongoing' | 'completed'
-    submissionStart: string
-    submissionEnd: string
-    judgingStart: string
-    judgingEnd: string
-    announcementDate: string
+    startDate: string
+    endDate: string
     totalSubmissions: number
     approvedSubmissions: number
 }
@@ -28,11 +25,8 @@ const MOCK_FESTIVALS: Festival[] = [
         name: '제3회 Dream Film Festival',
         year: 2025,
         status: 'ongoing',
-        submissionStart: '2025-01-01',
-        submissionEnd: '2025-03-31',
-        judgingStart: '2025-04-01',
-        judgingEnd: '2025-05-31',
-        announcementDate: '2025-06-15',
+        startDate: '2025-01-01',
+        endDate: '2025-12-31',
         totalSubmissions: 45,
         approvedSubmissions: 32
     },
@@ -41,11 +35,8 @@ const MOCK_FESTIVALS: Festival[] = [
         name: '제2회 Dream Film Festival',
         year: 2024,
         status: 'completed',
-        submissionStart: '2024-01-01',
-        submissionEnd: '2024-03-31',
-        judgingStart: '2024-04-01',
-        judgingEnd: '2024-05-31',
-        announcementDate: '2024-06-15',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
         totalSubmissions: 38,
         approvedSubmissions: 28
     },
@@ -54,11 +45,8 @@ const MOCK_FESTIVALS: Festival[] = [
         name: '제1회 Dream Film Festival',
         year: 2023,
         status: 'completed',
-        submissionStart: '2023-01-01',
-        submissionEnd: '2023-03-31',
-        judgingStart: '2023-04-01',
-        judgingEnd: '2023-05-31',
-        announcementDate: '2023-06-15',
+        startDate: '2023-01-01',
+        endDate: '2023-12-31',
         totalSubmissions: 32,
         approvedSubmissions: 25
     }
@@ -69,23 +57,42 @@ export default function FestivalAdmin() {
     const [editingFestivalId, setEditingFestivalId] = useState<string | null>(null)
     const [editForm, setEditForm] = useState<Partial<Festival>>({})
 
+    // 초기 로드 시 진행중인 영화제의 기간을 localStorage에 저장
+    useEffect(() => {
+        const ongoingFestival = festivals.find(f => f.status === 'ongoing')
+        if (ongoingFestival && ongoingFestival.startDate && ongoingFestival.endDate) {
+            localStorage.setItem('currentFestivalPeriod', JSON.stringify({
+                startDate: ongoingFestival.startDate,
+                endDate: ongoingFestival.endDate
+            }))
+        }
+    }, [festivals])
+
     const handleEditFestival = (festival: Festival) => {
         setEditingFestivalId(festival.id)
         setEditForm({
-            submissionStart: festival.submissionStart,
-            submissionEnd: festival.submissionEnd,
-            judgingStart: festival.judgingStart,
-            judgingEnd: festival.judgingEnd,
-            announcementDate: festival.announcementDate
+            startDate: festival.startDate,
+            endDate: festival.endDate
         })
     }
 
     const handleSaveEdit = (festivalId: string) => {
-        setFestivals(festivals.map(festival =>
+        const updatedFestivals = festivals.map(festival =>
             festival.id === festivalId
                 ? { ...festival, ...editForm }
                 : festival
-        ))
+        )
+        setFestivals(updatedFestivals)
+        
+        // 진행중인 영화제의 기간을 localStorage에 저장
+        const updatedFestival = updatedFestivals.find(f => f.id === festivalId && f.status === 'ongoing')
+        if (updatedFestival && editForm.startDate && editForm.endDate) {
+            localStorage.setItem('currentFestivalPeriod', JSON.stringify({
+                startDate: editForm.startDate,
+                endDate: editForm.endDate
+            }))
+        }
+        
         setEditingFestivalId(null)
         setEditForm({})
     }
@@ -197,56 +204,23 @@ export default function FestivalAdmin() {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
                                                         <Label className="text-sm font-semibold mb-2 block">
-                                                            출품 시작일
+                                                            영화제 시작일
                                                         </Label>
                                                         <Input
                                                             type="date"
-                                                            value={editForm.submissionStart}
-                                                            onChange={(e) => handleInputChange('submissionStart', e.target.value)}
+                                                            value={editForm.startDate}
+                                                            onChange={(e) => handleInputChange('startDate', e.target.value)}
                                                             className="bg-background"
                                                         />
                                                     </div>
                                                     <div>
                                                         <Label className="text-sm font-semibold mb-2 block">
-                                                            출품 마감일
+                                                            영화제 종료일
                                                         </Label>
                                                         <Input
                                                             type="date"
-                                                            value={editForm.submissionEnd}
-                                                            onChange={(e) => handleInputChange('submissionEnd', e.target.value)}
-                                                            className="bg-background"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label className="text-sm font-semibold mb-2 block">
-                                                            심사 시작일
-                                                        </Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={editForm.judgingStart}
-                                                            onChange={(e) => handleInputChange('judgingStart', e.target.value)}
-                                                            className="bg-background"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label className="text-sm font-semibold mb-2 block">
-                                                            심사 마감일
-                                                        </Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={editForm.judgingEnd}
-                                                            onChange={(e) => handleInputChange('judgingEnd', e.target.value)}
-                                                            className="bg-background"
-                                                        />
-                                                    </div>
-                                                    <div className="md:col-span-2">
-                                                        <Label className="text-sm font-semibold mb-2 block">
-                                                            수상작 발표일
-                                                        </Label>
-                                                        <Input
-                                                            type="date"
-                                                            value={editForm.announcementDate}
-                                                            onChange={(e) => handleInputChange('announcementDate', e.target.value)}
+                                                            value={editForm.endDate}
+                                                            onChange={(e) => handleInputChange('endDate', e.target.value)}
                                                             className="bg-background"
                                                         />
                                                     </div>
@@ -267,33 +241,13 @@ export default function FestivalAdmin() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                                                    <div>
-                                                        <p className="text-xs text-muted-foreground">출품 기간</p>
-                                                        <p className="text-sm font-semibold text-foreground">
-                                                            {festival.submissionStart} ~ {festival.submissionEnd}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                                                    <div>
-                                                        <p className="text-xs text-muted-foreground">심사 기간</p>
-                                                        <p className="text-sm font-semibold text-foreground">
-                                                            {festival.judgingStart} ~ {festival.judgingEnd}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 md:col-span-2">
-                                                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                                                    <div>
-                                                        <p className="text-xs text-muted-foreground">수상작 발표</p>
-                                                        <p className="text-sm font-semibold text-foreground">
-                                                            {festival.announcementDate}
-                                                        </p>
-                                                    </div>
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">영화제 기간</p>
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {festival.startDate} ~ {festival.endDate}
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
@@ -343,7 +297,7 @@ export default function FestivalAdmin() {
                                         </div>
 
                                         <div className="text-sm text-muted-foreground pt-4 border-t border-border">
-                                            <p>수상작 발표일: {festival.announcementDate}</p>
+                                            <p>영화제 기간: {festival.startDate} ~ {festival.endDate}</p>
                                         </div>
                                     </Card>
                                 )
