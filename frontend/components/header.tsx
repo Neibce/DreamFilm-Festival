@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from "next/image";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -12,9 +13,7 @@ export function Header() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">DF</span>
-            </div>
+            <Image src="/logo.png" alt="logo" width={55} height={55} className="object-contain"/>
             <div className="flex flex-col leading-none ml-1">
               <span className="font-bold text-[14px] text-foreground hidden sm:inline">2025 제3회</span>
               <span className="font-bold text-xl text-foreground hidden sm:inline">Dream Film Festival</span>
