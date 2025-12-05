@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { LogIn, Mail, Lock } from 'lucide-react'
 
 export default function LoginPage() {
@@ -33,22 +34,19 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background lg:px-8 min-h-screen flex flex-row items-center justify-start">
-      <Header />
-      <section className="px-4 md:px-6 lg:px-8 flex flex-row">
-        <div className="flex flex-row mx-20 items-center">
-          <div className="mr-10 w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-[40px]">DF</span>
-          </div>
+    <main className="min-h-screen bg-background flex items-center justify-center lg:px-8">
+      <section className="w-full max-w-8xl px-4 md:px-6 lg:px-8 flex flex-row items-center justify-center gap-12 lg:gap-16">
+        <div className="flex flex-row items-center">
+          <Image src="/logo.png" alt="logo" width={180} height={180} className="object-contain mr-4"/>
           <span className='text-[120px] font-bold'>
             DFF 2025
           </span>
         </div>
 
-        <div className="hidden md:block w-px h-80 bg-border"></div>
+        <div className="hidden md:block w-px h-[500px] bg-border mx-10"></div>
 
-        <div className="max-w-sm mx-auto flex flex-col items-center">
-          <div className="w-full ml-[40vh]">
+        <div className="flex flex-col h-[500px] items-center justify-center">
+          <div className="w-full max-w-sm">
             {/* Header */}
             <div className="mb-12 text-center">
               <h1 className="font-clipartkorea text-3xl md:text-[43px] font-extrabold text-foreground mb-4 text-balance">
@@ -96,19 +94,6 @@ export default function LoginPage() {
                       required
                     />
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-muted-foreground">로그인 상태 유지</span>
-                  </label>
-                  <Link href="#" className="text-sm text-primary hover:underline">
-                    비밀번호 찾기
-                  </Link>
                 </div>
 
                 <Button
