@@ -38,8 +38,6 @@ export default function SignupPage() {
 
   return (
     <main className="min-h-screen bg-background flex items-center justify-center">
-      <Header />
-
       <section className="w-full px-4 flex justify-center items-center">
         <div className="w-full max-w-md flex flex-col mx-auto">
           {/* Header */}
