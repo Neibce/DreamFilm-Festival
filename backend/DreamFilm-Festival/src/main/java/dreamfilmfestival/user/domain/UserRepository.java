@@ -7,7 +7,7 @@ public interface UserRepository {
     User save(User user);
     Optional<User> findById(Long userId);
     Optional<User> findByEmail(String email);
-    List<User> findAll();
+    List<User> findAll(String sortField, String sortDirection);
     void deleteById(Long userId);
 }
 

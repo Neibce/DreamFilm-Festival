@@ -24,5 +24,25 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<User> findAll(String sortField, String sortDirection) {
+        return userRepository.findAll(sortField, sortDirection);
+    }
+
+    @Transactional
+    public User updateRole(Long userId, UserRole role) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+        User updated = User.builder()
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .role(role)
+                .email(user.getEmail())
+                .createdAt(user.getCreatedAt())
+                .build();
+        return userRepository.save(updated);
+    }
 }
 

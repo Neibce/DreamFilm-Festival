@@ -1,20 +1,18 @@
 package dreamfilmfestival.user.presentation.dto;
 
 import dreamfilmfestival.user.domain.UserRole;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Builder
-@AllArgsConstructor
-public class SignUpResponse {
-    private Long userId;
-    private String username;
-    private String email;
-    private UserRole role;
-    private LocalDateTime createdAt;
+public record SignUpResponse(
+        Long userId,
+        String username,
+        String email,
+        UserRole role,
+        LocalDateTime createdAt
+) {
+    public static SignUpResponse of(Long userId, String username, String email, UserRole role, LocalDateTime createdAt) {
+        return new SignUpResponse(userId, username, email, role, createdAt);
+    }
 }
 
