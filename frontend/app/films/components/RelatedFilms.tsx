@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { Star, Film } from 'lucide-react'
+import { Star, Film, Heart, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 
 interface RelatedFilm {
@@ -8,6 +8,8 @@ interface RelatedFilm {
   director: string
   image: string
   rating: number
+  likes: number
+  reviews: number
 }
 
 interface RelatedFilmsProps {
@@ -23,20 +25,20 @@ export function RelatedFilms({ films }: RelatedFilmsProps) {
           {films.map((film) => (
             <Link key={film.id} href={`/films/${film.id}`}>
               <Card className="group overflow-hidden hover:border-primary transition cursor-pointer bg-card border-border h-full">
-                <div className="relative h-48 overflow-hidden bg-muted">
+                <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                   <img
                     src={film.image || "/placeholder.svg"}
                     alt={film.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition"
                   />
                 </div>
                 <div className="p-4 space-y-2">
-                  <h3 className="font-bold text-foreground group-hover:text-primary transition line-clamp-2">
+                  <h3 className="font-bold text-foreground group-hover:text-primary transition break-words whitespace-normal leading-tight text-balance">
                     {film.title}
                   </h3>
                   <p className="text-sm text-muted-foreground">{film.director}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">
+                  <div className="flex items-center gap-2 justify-between items-end">
+                    <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
@@ -47,8 +49,18 @@ export function RelatedFilms({ films }: RelatedFilmsProps) {
                           }`}
                         />
                       ))}
+                      <span className="text-sm text-foreground font-medium">{film.rating}</span>
                     </div>
-                    <span className="text-sm text-foreground font-medium">{film.rating}</span>
+                    <div className="flex gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-3.5 h-3.5" />
+                        {film.likes}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        {film.reviews}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Card>

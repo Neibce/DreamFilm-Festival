@@ -5,19 +5,20 @@ import { Footer } from '@/components/footer'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Trophy, Medal, Award, Crown, Star, Users, Heart } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { api, resolveImageUrl } from '@/lib/api'
 
 interface AwardWinner {
     id: string
     rank: number
     title: string
     director: string
-    genre?: string
-    image?: string
+    genre?: string | null
+    image?: string | null
     judgeAverageScore: number
     likes: number
     finalScore: number
-    dreamSummary?: string
+    dreamSummary?: string | null
 }
 
 interface PopularityWinner {
@@ -26,62 +27,141 @@ interface PopularityWinner {
     director: string
     likes: number
     popularityScore: number
+    genre?: string | null
+    image?: string | null
 }
 
-const MOCK_WINNERS: AwardWinner[] = [
-    {
-        id: '1',
-        rank: 1,
-        title: '하늘을 나는 도시',
-        director: '김윤영',
-        genre: '판타지',
-        image: '/fantasy-film-poster.jpg',
-        judgeAverageScore: 4.5,
-        likes: 1240,
-        finalScore: 90.0,
-        dreamSummary: '도시가 하늘로 떠오르는 초현실적인 세계를 그린 판타지 드라마'
-    },
-    {
-        id: '2',
-        rank: 2,
-        title: '기억을 파는 상점',
-        director: '양준영',
-        genre: 'SF',
-        image: '/sci-fi-movie-poster.png',
-        judgeAverageScore: 4.5,
-        likes: 956,
-        finalScore: 90.6,
-        dreamSummary: '기억을 사고파는 미래 사회의 어두운 이면을 다룬 SF 스릴러'
-    },
-    {
-        id: '3',
-        rank: 3,
-        title: '시간이 멈춘 카페',
-        director: '임지우',
-        genre: '드라마',
-        image: '/drama-film-poster.jpg',
-        judgeAverageScore: 4.2,
-        likes: 1120,
-        finalScore: 87.0,
-        dreamSummary: '시간이 멈춘 카페에서 펼쳐지는 따뜻한 인간 드라마'
-    }
-]
+interface FestivalInfo {
+    id: string
+    name: string
+    startDate: string
+    endDate: string
+}
 
 export default function AwardsPage() {
-    const [winners, setWinners] = useState<AwardWinner[]>(MOCK_WINNERS)
+    const [winners, setWinners] = useState<AwardWinner[]>([])
     const [popularityWinner, setPopularityWinner] = useState<PopularityWinner | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [festival, setFestival] = useState<FestivalInfo | null>(null)
+    const [festivals, setFestivals] = useState<FestivalInfo[]>([])
+    const [festivalsLoading, setFestivalsLoading] = useState(true)
+    const [selectedFestivalId, setSelectedFestivalId] = useState<string | null>(null)
+    const [unfinalized, setUnfinalized] = useState(false)
 
+    // 영화제 목록 로드
     useEffect(() => {
-        const savedWinners = localStorage.getItem('awardWinners')
-        const savedPopularityWinner = localStorage.getItem('popularityWinner')
-        
-        if (savedWinners) {
-            setWinners(JSON.parse(savedWinners))
-        }
-        if (savedPopularityWinner) {
-            setPopularityWinner(JSON.parse(savedPopularityWinner))
-        }
+        let mounted = true
+        setFestivalsLoading(true)
+        api.getFestivals()
+            .then((res) => {
+                if (!mounted) return
+                const list = Array.isArray(res) ? res : []
+                const sorted = [...list].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''))
+                const mapped = sorted.map((f) => ({
+                    id: String(f.festivalId ?? f.id),
+                    name: f.festivalName ?? f.name ?? 'Dream Film Festival',
+                    startDate: f.startDate,
+                    endDate: f.endDate,
+                }))
+                setFestivals(mapped)
+                if (mapped[0]) {
+                    setSelectedFestivalId(mapped[0].id)
+                } else {
+                    setUnfinalized(true)
+                    setLoading(false)
+                }
+            })
+            .catch((e) => {
+                console.error(e)
+                if (!mounted) return
+                setUnfinalized(true)
+                setLoading(false)
+            })
+            .finally(() => {
+                if (mounted) setFestivalsLoading(false)
+            })
+
+        return () => { mounted = false }
     }, [])
+
+    // 선택한 영화제의 수상작 로드
+    useEffect(() => {
+        if (!selectedFestivalId) return
+
+        const selected = festivals.find((f) => f.id === selectedFestivalId) ?? null
+        setFestival(selected)
+        setLoading(true)
+        setUnfinalized(false)
+        setWinners([])
+        setPopularityWinner(null)
+
+        let mounted = true
+        const fetchAwards = async () => {
+            try {
+                const awards = await api.getAwardsByFestival(selectedFestivalId) as any[]
+                if (!mounted) return
+                if (!awards || awards.length === 0) {
+                    setUnfinalized(true)
+                    return
+                }
+
+                const rankingAwards = awards
+                    .filter((a) => a.rank !== 4)
+                    .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+                    .slice(0, 5)
+                const popularity = awards.find((a) => a.rank === 4) ?? null
+
+                const rankingWithDetail = await Promise.all(rankingAwards.map(async (a: any) => {
+                    const detail = await api.getFilmDetail(a.filmId) as any
+                    return {
+                        id: String(a.filmId),
+                        rank: a.rank ?? 0,
+                        title: detail?.title ?? '제목 미상',
+                        director: detail?.director?.username ?? detail?.directorName ?? '감독 정보 없음',
+                        genre: detail?.genre ?? null,
+                        image: resolveImageUrl(detail?.imageUrl),
+                        judgeAverageScore: detail?.averageRating ?? 0,
+                        likes: detail?.voteCount ?? 0,
+                        finalScore: (detail?.averageRating ?? 0) * 20,
+                        dreamSummary: detail?.summary ?? detail?.dreamText ?? null,
+                    } as AwardWinner
+                }))
+
+                let popularityMapped: PopularityWinner | null = null
+                if (popularity) {
+                    const detail = await api.getFilmDetail(popularity.filmId) as any
+                    popularityMapped = {
+                        id: String(popularity.filmId),
+                        title: detail?.title ?? '제목 미상',
+                        director: detail?.director?.username ?? detail?.directorName ?? '감독 정보 없음',
+                        likes: detail?.voteCount ?? 0,
+                        popularityScore: detail?.voteCount ?? 0,
+                        genre: detail?.genre ?? null,
+                        image: resolveImageUrl(detail?.imageUrl),
+                    }
+                }
+
+                setWinners(rankingWithDetail)
+                setPopularityWinner(popularityMapped)
+            } catch (e) {
+                console.error(e)
+                if (!mounted) return
+                setUnfinalized(true)
+            } finally {
+                if (mounted) setLoading(false)
+            }
+        }
+
+        fetchAwards()
+
+        return () => { mounted = false }
+    }, [selectedFestivalId, festivals])
+
+    const festivalTitle = useMemo(() => {
+        if (!festival) return 'Dream Film Festival'
+        const name = festival.name?.includes('Dream Film Festival') ? festival.name : `${festival.name} Dream Film Festival`
+        return name
+    }, [festival])
 
     const getRankIcon = (rank: number) => {
         if (rank === 1) return <Trophy className="w-12 h-12 text-yellow-500" />
@@ -100,6 +180,107 @@ export default function AwardsPage() {
     const topWinner = winners[0]
     const otherWinners = winners.slice(1)
 
+    const SkeletonBlock = ({ className }: { className?: string }) => (
+        <div className={`animate-pulse bg-muted rounded-md ${className ?? ''}`} />
+    )
+
+    if (loading) {
+        return (
+            <main className="min-h-screen bg-background">
+                <Header />
+
+                {/* Hero Section */}
+                <section className="pt-20 pb-12 px-4 md:px-6 lg:px-8 border-b border-border bg-gradient-to-b from-primary/5 to-background">
+                    <div className="max-w-7xl mx-auto text-center space-y-4">
+                        <div className="mx-auto w-16 h-16">
+                            <SkeletonBlock className="w-full h-full rounded-full" />
+                        </div>
+                        <SkeletonBlock className="mx-auto h-10 w-64" />
+                        <SkeletonBlock className="mx-auto h-6 w-48" />
+                        <div className="mx-auto space-y-2 max-w-xl">
+                            <SkeletonBlock className="h-4 w-full" />
+                            <SkeletonBlock className="h-4 w-3/4 mx-auto" />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Grand Prize Skeleton */}
+                <section className="py-12 px-4 md:px-6 lg:px-8">
+                    <div className="max-w-7xl mx-auto space-y-6">
+                        <SkeletonBlock className="h-8 w-32 mx-auto" />
+                        <SkeletonBlock className="h-6 w-48 mx-auto" />
+                        <Card className="overflow-hidden border-border p-0">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                                <SkeletonBlock className="h-96 w-full" />
+                                <div className="p-8 lg:p-12 space-y-4">
+                                    <SkeletonBlock className="h-8 w-3/4" />
+                                    <SkeletonBlock className="h-4 w-1/2" />
+                                    <SkeletonBlock className="h-5 w-24" />
+                                    <SkeletonBlock className="h-20 w-full" />
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <SkeletonBlock className="h-16 w-full" />
+                                        <SkeletonBlock className="h-16 w-full" />
+                                    </div>
+                                    <SkeletonBlock className="h-20 w-full" />
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                </section>
+
+                {/* Other Winners Skeleton */}
+                <section className="py-12 px-4 md:px-6 lg:px-8 bg-muted/20">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {Array.from({ length: 4 }).map((_, idx) => (
+                                <Card key={idx} className="overflow-hidden border-border p-0 h-full flex flex-col">
+                                    <SkeletonBlock className="h-64 w-full" />
+                                    <div className="p-6 space-y-4 flex-1 flex flex-col">
+                                        <SkeletonBlock className="h-6 w-3/4" />
+                                        <SkeletonBlock className="h-4 w-1/2" />
+                                        <SkeletonBlock className="h-5 w-16" />
+                                        <SkeletonBlock className="h-10 w-full" />
+                                        <div className="mt-auto grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                                            <SkeletonBlock className="h-12 w-full" />
+                                            <SkeletonBlock className="h-12 w-full" />
+                                            <SkeletonBlock className="h-12 w-full" />
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Popularity Skeleton */}
+                <section className="py-12 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-pink-500/5 to-background">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center mb-8 space-y-3">
+                            <SkeletonBlock className="h-8 w-32 mx-auto" />
+                            <SkeletonBlock className="h-6 w-48 mx-auto" />
+                            <SkeletonBlock className="h-4 w-64 mx-auto" />
+                        </div>
+
+                        <Card className="overflow-hidden border-border max-w-5xl mx-auto p-0">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                                <SkeletonBlock className="h-80 w-full" />
+                                <div className="p-8 lg:p-12 space-y-6 flex flex-col justify-center">
+                                    <SkeletonBlock className="h-20 w-20 mx-auto rounded-full" />
+                                    <SkeletonBlock className="h-8 w-3/4 mx-auto" />
+                                    <SkeletonBlock className="h-5 w-1/2 mx-auto" />
+                                    <SkeletonBlock className="h-4 w-24 mx-auto" />
+                                    <SkeletonBlock className="h-10 w-32 mx-auto" />
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                </section>
+
+                <Footer />
+            </main>
+        )
+    }
+
     return (
         <main className="min-h-screen bg-background">
             <Header />
@@ -111,7 +292,7 @@ export default function AwardsPage() {
                         <Crown className="w-16 h-16 text-yellow-500" />
                     </div>
                     <h1 className="font-clipartkorea text-4xl md:text-6xl font-extrabold text-foreground mb-4">
-                        2025 제3회 Dream Film Festival
+                        {festivalTitle}
                     </h1>
                     <h2 className="text-2xl md:text-3xl font-bold mb-6">
                         수상작 발표
@@ -122,9 +303,52 @@ export default function AwardsPage() {
                 </div>
             </section>
 
-            {/* Grand Prize Winner */}
-            <section className="py-12 px-4 md:px-6 lg:px-8">
+            {/* Festival Selector */}
+            <section className="px-4 md:px-6 lg:px-8 border-b border-border bg-background">
                 <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-wrap gap-2 overflow-x-auto py-4">
+                        {festivalsLoading ? (
+                            Array.from({ length: 3 }).map((_, idx) => (
+                                <div key={idx} className="h-10 w-24 rounded-lg bg-muted animate-pulse" />
+                            ))
+                        ) : festivals.length > 0 ? (
+                            festivals.map((fest) => (
+                                <button
+                                    key={fest.id}
+                                    onClick={() => setSelectedFestivalId(fest.id)}
+                                    className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${
+                                        fest.id === selectedFestivalId
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'bg-card text-foreground hover:bg-border'
+                                    }`}
+                                >
+                                    {fest.name}
+                                </button>
+                            ))
+                        ) : (
+                            <span className="text-sm text-muted-foreground">등록된 영화제가 없습니다.</span>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            {!loading && (!topWinner || unfinalized) && (
+                <section className="py-16 px-4 md:px-6 lg:px-8">
+                    <div className="max-w-3xl mx-auto text-center space-y-4">
+                        <Card className="p-8 bg-card border-border">
+                            <h3 className="text-2xl font-bold text-foreground mb-2">수상작이 아직 확정되지 않았습니다.</h3>
+                            <p className="text-muted-foreground">
+                                영화제 운영 측에서 수상작을 확정하면 이 페이지에 발표됩니다.
+                            </p>
+                        </Card>
+                    </div>
+                </section>
+            )}
+
+            {/* Grand Prize Winner */}
+            {topWinner && (
+            <section className="py-12 px-4 md:px-6 lg:px-8">
+                <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-8">
                         <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30 text-lg px-6 py-2 mb-4">
                             🏆 대상
@@ -132,10 +356,10 @@ export default function AwardsPage() {
                         <h2 className="text-3xl font-bold text-foreground mb-2">Grand Prize Winner</h2>
                     </div>
 
-                    <Card className="overflow-hidden bg-gradient-to-br from-yellow-500/10 via-background to-background border-yellow-500/30 hover-glow-yellow group">
+                    <Card className="overflow-hidden bg-gradient-to-br from-yellow-500/10 via-background to-background border-yellow-500/30 hover-glow-yellow group p-0">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                             {/* Image */}
-                            <div className="relative h-96 lg:h-auto overflow-hidden bg-muted">
+                            <div className="relative w-full aspect-[4/5] overflow-hidden bg-muted">
                                 <img
                                     src={topWinner.image || "/placeholder.svg"}
                                     alt={topWinner.title}
@@ -150,7 +374,9 @@ export default function AwardsPage() {
                             {/* Content */}
                             <div className="p-8 lg:p-12 space-y-6">
                                 <div>
-                                    <h3 className="text-4xl font-bold text-foreground mb-2">{topWinner.title}</h3>
+                                    <h3 className="text-4xl font-bold text-foreground mb-2 break-words whitespace-normal leading-tight text-balance">
+                                        {topWinner.title}
+                                    </h3>
                                     <p className="text-xl text-muted-foreground">{topWinner.director}</p>
                                 </div>
 
@@ -199,8 +425,10 @@ export default function AwardsPage() {
                     </Card>
                 </div>
             </section>
+            )}
 
             {/* Other Winners */}
+            {otherWinners.length > 0 && (
             <section className="py-12 px-4 md:px-6 lg:px-8 bg-muted/20">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -219,7 +447,7 @@ export default function AwardsPage() {
                                         </Badge>
                                     </div>
                                     
-                                    <Card className={`group overflow-hidden bg-card border-border ${hoverBorderClass} transition cursor-pointer`}>
+                                    <Card className={`group overflow-hidden bg-card border-border ${hoverBorderClass} transition cursor-pointer p-0 h-full flex flex-col`}>
                                         {/* Image */}
                                         <div className="relative h-64 overflow-hidden bg-muted">
                                             <img
@@ -236,9 +464,9 @@ export default function AwardsPage() {
                                         </div>
 
                                     {/* Content */}
-                                    <div className="p-6 space-y-4">
-                                        <div>
-                                            <h3 className={`text-2xl font-bold text-foreground ${hoverTextClass} transition mb-1`}>
+                                    <div className="p-6 space-y-4 flex-1 flex flex-col">
+                                        <div className="space-y-1">
+                                            <h3 className={`text-2xl font-bold text-foreground ${hoverTextClass} transition mb-1 break-words whitespace-normal leading-tight text-balance`}>
                                                 {winner.title}
                                             </h3>
                                             <p className="text-muted-foreground">{winner.director}</p>
@@ -252,7 +480,7 @@ export default function AwardsPage() {
                                             {winner.dreamSummary}
                                         </p>
 
-                                        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                                        <div className="mt-auto grid grid-cols-3 gap-4 pt-4 border-t border-border">
                                             <div>
                                                 <p className="text-xs text-muted-foreground mb-1">심사위원 평가</p>
                                                 <p className="text-lg font-bold text-foreground">
@@ -282,6 +510,7 @@ export default function AwardsPage() {
                     </div>
                 </div>
             </section>
+            )}
 
             {/* Popularity Award Section */}
             {popularityWinner && (
@@ -295,30 +524,55 @@ export default function AwardsPage() {
                             <p className="text-muted-foreground">관객 여러분의 투표로 선정된 가장 사랑받은 작품</p>
                         </div>
 
-                        <Card className="overflow-hidden bg-gradient-to-br from-pink-500/10 via-background to-background border-pink-500/30 max-w-4xl mx-auto">
-                            <div className="p-8 lg:p-12 space-y-6">
-                                <div className="flex items-center justify-center mb-6">
-                                    <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center">
-                                        <Heart className="w-12 h-12 text-pink-500 fill-pink-500" />
+                        <Card className="overflow-hidden bg-gradient-to-br from-pink-500/10 via-background to-background border-pink-500/30 max-w-5xl mx-auto p-0">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                                {/* Poster Image */}
+                                <div className="relative w-full aspect-[4/5] overflow-hidden bg-muted">
+                                    <img
+                                        src={popularityWinner.image || "/placeholder.svg"}
+                                        alt={popularityWinner.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                                    <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                                        <div className="w-12 h-12 rounded-full bg-pink-500/30 flex items-center justify-center backdrop-blur-sm">
+                                            <Heart className="w-7 h-7 text-pink-500 fill-pink-500" />
+                                        </div>
+                                        {popularityWinner.genre && (
+                                            <Badge className="bg-pink-500/20 text-pink-500 border-pink-500/30">
+                                                {popularityWinner.genre}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="text-center">
-                                    <h3 className="text-4xl font-bold text-foreground mb-2">{popularityWinner.title}</h3>
-                                    <p className="text-xl text-muted-foreground">{popularityWinner.director}</p>
-                                </div>
-
-                                <div className="text-center pt-6">
-                                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
-                                        <Heart className="w-5 h-5 text-pink-500 fill-pink-500" />
-                                        관객 투표 수
+                                {/* Content */}
+                                <div className="p-8 lg:p-12 space-y-6 flex flex-col justify-center">
+                                    <div className="flex items-center justify-center mb-2">
+                                        <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center">
+                                            <Heart className="w-12 h-12 text-pink-500 fill-pink-500" />
+                                        </div>
                                     </div>
-                                    <p className="text-5xl font-bold text-pink-500">
-                                        {popularityWinner.likes.toLocaleString()}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground mt-3">
-                                        투표 수 100%로 선정된 인기상 수상작
-                                    </p>
+
+                                    <div className="text-center space-y-2">
+                                        <h3 className="text-4xl font-bold text-foreground break-words whitespace-normal leading-tight text-balance">
+                                            {popularityWinner.title}
+                                        </h3>
+                                        <p className="text-xl text-muted-foreground">{popularityWinner.director}</p>
+                                    </div>
+
+                                    <div className="text-center pt-4">
+                                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
+                                            <Heart className="w-5 h-5 text-pink-500 fill-pink-500" />
+                                            관객 투표 수
+                                        </div>
+                                        <p className="text-5xl font-bold text-pink-500">
+                                            {popularityWinner.likes.toLocaleString()}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground mt-3">
+                                            투표 수 100%로 선정된 인기상 수상작
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </Card>
@@ -327,16 +581,18 @@ export default function AwardsPage() {
             )}
 
             {/* Festival Info */}
-            <section className="py-12 px-4 md:px-6 lg:px-8 border-t border-border">
-                <div className="max-w-3xl mx-auto text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-foreground">
-                        모든 감독 분들과 참여해주신 심사위원, 관객 여러분께 감사드립니다.
-                    </h3>
-                    <p className="text-lg text-muted-foreground">
-                        2025 제13회 Dream Film Festival은 성공적으로 마무리되었습니다.
-                    </p>
-                </div>
-            </section>
+            {topWinner && (
+                <section className="py-12 px-4 md:px-6 lg:px-8 border-t border-border">
+                    <div className="max-w-3xl mx-auto text-center space-y-4">
+                        <h3 className="text-2xl font-bold text-foreground">
+                            모든 감독 분들과 참여해주신 심사위원, 관객 여러분께 감사드립니다.
+                        </h3>
+                        <p className="text-lg text-muted-foreground">
+                            {festivalTitle}은 성공적으로 마무리되었습니다.
+                        </p>
+                    </div>
+                </section>
+            )}
 
             <Footer />
         </main>

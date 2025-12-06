@@ -8,11 +8,19 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useState } from 'react'
-import { Upload, Wand2, CheckCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Wand2, CheckCircle, Loader2 } from 'lucide-react'
+import { api, resolveImageUrl } from '@/lib/api'
+import { useToastStore } from '@/store/toast'
+import { useRoleGuard } from '@/hooks/useRoleGuard'
 
 export default function SubmitPage() {
-  const [step, setStep] = useState<'dream' | 'check' | 'success'>('dream')
+  const [step, setStep] = useState<'dream' | 'waiting' | 'check' | 'success'>('dream')
+  const [submitting, setSubmitting] = useState(false)
+  const [polling, setPolling] = useState(false)
+  const [createdFilmId, setCreatedFilmId] = useState<string | null>(null)
+  const [filmDetail, setFilmDetail] = useState<any | null>(null)
+  const [initializing, setInitializing] = useState(true)
   const [formData, setFormData] = useState({
     dreamDescription: '',
     mood: '',
@@ -23,15 +31,156 @@ export default function SubmitPage() {
     director: '',
     email: '',
   })
+  const { show } = useToastStore()
+  const { authorized, checking } = useRoleGuard('DIRECTOR')
+
+  // 권한 확인 전까지는 조용히 대기
+  if (checking) return null
+  if (!authorized) return null
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // 페이지 진입 시 기존 진행 중 작품 복원
+  useEffect(() => {
+    if (!authorized) return
+    if (createdFilmId) {
+      setInitializing(false)
+      return
+    }
+    let mounted = true
+    api.getMyFilms()
+      .then((list: any) => {
+        if (!mounted || !Array.isArray(list)) return
+        const waitingUser = list.find((f: any) => f.status === 'WAITING_USER_APPROVAL')
+        if (waitingUser) {
+          setCreatedFilmId(String(waitingUser.filmId))
+          setFilmDetail(waitingUser)
+          setStep('check')
+          return
+        }
+        const waitingAi = list.find((f: any) => f.status === 'WAITING_AI_GENERATION')
+        if (waitingAi) {
+          setCreatedFilmId(String(waitingAi.filmId))
+          setFilmDetail(waitingAi)
+          setStep('waiting')
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (mounted) setInitializing(false) })
+    return () => { mounted = false }
+  }, [authorized, createdFilmId])
+
+  // AI 완료 상태 도달까지 폴링
+  useEffect(() => {
+    if (!authorized || step !== 'waiting' || !createdFilmId) return
+    let mounted = true
+    let timer: NodeJS.Timeout | null = null
+    const start = Date.now()
+    setPolling(true)
+
+    const poll = async () => {
+      if (!mounted) return
+      try {
+        const detail: any = await api.getFilmDetail(createdFilmId)
+        if (!mounted) return
+      if (detail?.status === 'WAITING_USER_APPROVAL') {
+        setFilmDetail(detail)
+          setStep('check')
+          setPolling(false)
+          return
+        }
+      } catch (e: any) {
+        if (!mounted) return
+        show({ message: e?.message || '상태를 불러오지 못했습니다.', kind: 'error' })
+      }
+
+      if (Date.now() - start > 120000) { // 2분 타임아웃
+        show({ message: 'AI 생성이 지연되고 있습니다. 잠시 후 다시 시도해주세요.', kind: 'error' })
+        setStep('dream')
+        setPolling(false)
+        setCreatedFilmId(null)
+        return
+      }
+
+      timer = setTimeout(poll, 3000)
+    }
+
+    poll()
+    return () => {
+      mounted = false
+      if (timer) clearTimeout(timer)
+      setPolling(false)
+    }
+  }, [authorized, step, createdFilmId, show])
+
+  // check 단계 진입 시 상세 없으면 한번 더 조회
+  useEffect(() => {
+    if (!authorized || step !== 'check' || !createdFilmId || filmDetail) return
+    api.getFilmDetail(createdFilmId)
+      .then((detail: any) => {
+        setFilmDetail(detail)
+      })
+      .catch((e: any) => {
+        show({ message: e?.message || '상세를 불러오지 못했습니다.', kind: 'error' })
+      })
+  }, [authorized, step, createdFilmId, filmDetail, show])
+
   const isStep1Valid = formData.title && formData.dreamDescription.length > 50 && formData.mood && formData.genre && formData.themes
 
-  const handleSubmit = () => {
-    setStep('success')
+  const handleGenerate = async () => {
+    if (initializing || submitting || !isStep1Valid) return
+    setSubmitting(true)
+    setStep('waiting')
+    try {
+      const res: any = await api.submitFilm({
+        title: formData.title,
+        dreamText: formData.dreamDescription,
+        genre: formData.genre,
+        mood: formData.mood,
+        themes: formData.themes,
+        targetAudience: formData.targetAudience || undefined,
+      })
+      if (res?.filmId) {
+        setCreatedFilmId(String(res.filmId))
+      } else {
+        show({ message: '생성 요청에 실패했습니다. 다시 시도해주세요.', kind: 'error' })
+        setStep('dream')
+        return
+      }
+      show({ message: '시나리오 생성 요청을 보냈습니다.', kind: 'success' })
+    } catch (err: any) {
+      show({ message: err?.message || '출품에 실패했습니다.', kind: 'error' })
+      setStep('dream')
+      setCreatedFilmId(null)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (initializing || !createdFilmId) return
+    try {
+      await api.approveFilmUser(createdFilmId)
+      show({ message: '출품을 확정했습니다.', kind: 'success' })
+      setStep('success')
+    } catch (e: any) {
+      show({ message: e?.message || '출품 확정에 실패했습니다.', kind: 'error' })
+    }
+  }
+
+  const handleRetry = async () => {
+    if (initializing || !createdFilmId) return
+    try {
+      await api.denyFilmUser(createdFilmId)
+      show({ message: '출품을 거절하고 처음부터 다시 진행합니다.', kind: 'success' })
+      setStep('dream')
+      setCreatedFilmId(null)
+      setFilmDetail(null)
+    } catch (e: any) {
+      show({ message: e?.message || '다시하기에 실패했습니다.', kind: 'error' })
+    }
   }
 
   return (
@@ -53,12 +202,12 @@ export default function SubmitPage() {
           {/* Progress Steps */}
           <div className="mb-12">
             <div className="flex justify-between mb-8">
-              {['Dream', 'check', 'Success'].map((s, i) => (
+              {['Dream', 'Generating', 'Check', 'Success'].map((s, i) => (
                 <div key={s} className="flex flex-col items-center">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition ${
-                    step === ['dream', 'check', 'success'][i]
+                    step === ['dream', 'waiting', 'check', 'success'][i]
                       ? 'bg-primary text-primary-foreground'
-                      : ['dream', 'check', 'success'].indexOf(step) > i
+                      : ['dream', 'waiting', 'check', 'success'].indexOf(step) > i
                       ? 'bg-primary/50 text-white/60'
                       : 'bg-card text-muted-foreground border border-border'
                   }`}>
@@ -70,13 +219,28 @@ export default function SubmitPage() {
             </div>
             <div className="h-1 bg-card rounded-full overflow-hidden">
               <div className={`h-full bg-primary transition-all ${
-                step === 'dream' ? 'w-1/3' :
-                step === 'check' ? 'w-2/3' :
+                step === 'dream' ? 'w-1/4' :
+                step === 'waiting' ? 'w-2/4' :
+                step === 'check' ? 'w-3/4' :
                 'w-full'
               }`} />
             </div>
           </div>
 
+          {initializing && (
+            <Card className="p-6 bg-card border border-border mb-6 space-y-4">
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                <div className="h-4 w-full bg-muted rounded animate-pulse" />
+              </div>
+              <div className="h-24 w-full bg-muted rounded animate-pulse" />
+              <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+            </Card>
+          )}
+
+          {!initializing && (
+          <>
           {/* Step 1: Dream Description */}
           {step === 'dream' && (
             <Card className="p-8 bg-card border-border space-y-6">
@@ -164,68 +328,100 @@ export default function SubmitPage() {
                   </p>
                 )}
                 <Button
-                  onClick={() => setStep('check')}
-                  disabled={!isStep1Valid}
+                  onClick={handleGenerate}
+                  disabled={!isStep1Valid || submitting || initializing}
                   className="w-full mt-2 bg-primary font-light hover:bg-primary/90 text-primary-foreground"
                 >
                   <Wand2 className="w-4 h-4 mr-2" />
-                  영화 시나리오 생성하기
+                  {submitting ? '시나리오 생성 중...' : '영화 시나리오 생성하기'}
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* Step 2: Check */}
+          {/* Step 2: Waiting for AI */}
+          {step === 'waiting' && (
+            <Card className="p-8 bg-card border-border space-y-6 text-center">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <Loader2 className="w-7 h-7 text-primary animate-spin" />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">AI 시나리오 생성 중...</h2>
+                <p className="text-muted-foreground">
+                  꿈 내용과 제목, 분위기, 테마를 바탕으로 시나리오와 포스터 콘셉트를 만들고 있어요. 상태가 완료될 때까지 자동으로 기다립니다.
+                </p>
+              </div>
+              <div className="bg-background border border-border rounded-lg p-4 text-left text-sm text-muted-foreground space-y-2">
+                <p>• 입력한 정보는 제출되었으며, 상태가 바뀌면 자동으로 다음 단계로 이동합니다.</p>
+                <p>• 30초 - 1분 가량 소요됩니다</p>
+              </div>
+            </Card>
+          )}
+
+          {/* Step 3: Check */}
           {step === 'check' && (
             <Card className="p-8 bg-card border-border space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">출품작 마지막 점검</h2>
-                <p className="text-muted-foreground">출품하기 전, 입력하신 정보가 맞는지 다시 한 번 확인해주세요.</p>
-              </div>
-
-              <div className="space-y-6 bg-background rounded-lg p-6">
-                <div className="border-b border-border pb-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">꿈 내용</h3>
-                  <p className="text-foreground line-clamp-3">{formData.dreamDescription}</p>
+              <div className="flex items-start gap-6">
+                <div className="w-40 aspect-[4/5] rounded-lg overflow-hidden bg-muted border border-border flex-shrink-0">
+                  {filmDetail?.imageUrl ? (
+                    <img
+                      src={resolveImageUrl(filmDetail.imageUrl) || '/placeholder.svg'}
+                      alt="poster"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                      포스터 생성 중
+                    </div>
+                  )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">영화 제목</h3>
-                    <p className="text-foreground">{formData.title}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">장르</h3>
-                    <p className="text-foreground">{formData.genre}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">감독</h3>
-                    <p className="text-foreground">{formData.director}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">Email</h3>
-                    <p className="text-foreground">{formData.email}</p>
-                  </div>
+                <div className="flex-1 space-y-2">
+                  <h2 className="text-2xl font-bold text-foreground">{filmDetail?.title || formData.title}</h2>
+                  <p className="text-muted-foreground text-sm">
+                    장르: {filmDetail?.genre || formData.genre || '-'}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4 mb-0">
-                <p className="text-sm text-green-500">
-                  당신의 제출 내용은 관리자 팀이 24시간 이내에 검토할 예정입니다. 승인 후 확인 이메일이 발송됩니다.
-                </p>
+              <div className="space-y-6 bg-background rounded-lg p-6 border border-border">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase">꿈 내용</h3>
+                  <p className="text-foreground whitespace-pre-wrap">{filmDetail?.dreamText || formData.dreamDescription}</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase">시나리오 요약</h3>
+                  <p className="text-foreground whitespace-pre-wrap">
+                    {filmDetail?.summary || 'AI 요약을 불러오는 중입니다.'}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase">시나리오</h3>
+                  <div className="text-foreground whitespace-pre-wrap leading-relaxed space-y-4">
+                    {(filmDetail?.aiScript || '').length > 0
+                      ? (filmDetail.aiScript as string).split('\n\n').map((para: string, idx: number) => (
+                          <p key={idx}>{para}</p>
+                        ))
+                      : <p className="text-muted-foreground">AI 시나리오를 생성 중입니다.</p>
+                    }
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-4">
                 <Button
-                  onClick={() => setStep('dream')}
+                  onClick={handleRetry}
                   variant="outline"
-                  className="flex-1 border-border hover:bg-card"
+                  className="flex-1 border-border hover:bg-card cursor-pointer"
+                  disabled={initializing || submitting}
                 >
-                  뒤로 가기
+                  다시하기
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+                  disabled={initializing || submitting}
                 >
                   출품하기
                 </Button>
@@ -245,7 +441,7 @@ export default function SubmitPage() {
               <div>
                 <h2 className="text-3xl font-bold text-foreground mb-4">꿈 출품 완료!</h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  당신의 꿈을 출품해주셔서 감사합니다.<br/>AI가 당신의 꿈을 영화 시나리오로 변환한 뒤 관리자가 검토합니다.<br/>승인 완료되면 이메일이 발송되오니 확인 부탁드립니다.<br/>좋은 결과가 있기를 바랍니다.
+                  당신의 꿈을 출품해주셔서 감사합니다.<br/>생성된 꿈 영화는 24시간 내에 관리자가 검토할 예정입니다.<br/>좋은 결과가 있기를 바랍니다!
                 </p>
               </div>
 
@@ -256,6 +452,9 @@ export default function SubmitPage() {
                 출품작 보러가기
               </Button>
             </Card>
+          )}
+
+          </>
           )}
         </div>
       </section>

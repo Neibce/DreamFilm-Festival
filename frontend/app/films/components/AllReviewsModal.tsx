@@ -14,25 +14,24 @@ interface AllReviewsModalProps {
   filmTitle: string
   reviews: Review[]
   sortType: SortType
-  helpful: Record<string, boolean>
   onSortChange: (sortType: SortType) => void
-  onToggleHelpful: (reviewId: string) => void
 }
 
 export function AllReviewsModal({
   filmTitle,
   reviews,
   sortType,
-  helpful,
-  onSortChange,
-  onToggleHelpful
+  onSortChange
 }: AllReviewsModalProps) {
-  if (reviews.length <= 3) return null
-
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="border-border text-xs">
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-border text-xs"
+          disabled={reviews.length === 0}
+        >
           전체 보기 ({reviews.length})
         </Button>
       </DialogTrigger>
@@ -48,14 +47,6 @@ export function AllReviewsModal({
         
         {/* 모달 내 정렬 버튼 */}
         <div className="flex gap-2 pt-2 border-t">
-          <Button
-            variant={sortType === 'helpful' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onSortChange('helpful')}
-            className="text-xs"
-          >
-            좋아요순
-          </Button>
           <Button
             variant={sortType === 'recent' ? 'default' : 'outline'}
             size="sm"
@@ -79,8 +70,6 @@ export function AllReviewsModal({
             <ReviewCard
               key={review.id}
               review={review}
-              helpful={helpful}
-              onToggleHelpful={onToggleHelpful}
             />
           ))}
         </div>
