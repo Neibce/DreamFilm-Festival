@@ -16,37 +16,157 @@ public class JdbcVoteRepository implements VoteRepository {
 
     @Override
     public Vote save(Vote vote) {
-        // TODO: INSERT or UPDATE 구현
-        return null;
+        if (vote.getVoteId() == null) {
+            return insert(vote);
+        }
+        return update(vote);
     }
 
     @Override
     public Optional<Vote> findById(Long voteId) {
-        // TODO: SELECT 구현
-        return Optional.empty();
+        String sql = """
+            SELECT vote_id, film_id, user_id
+            FROM vote
+            WHERE vote_id = ?
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(voteId)
+                .query((rs, rowNum) -> Vote.builder()
+                        .voteId(rs.getLong("vote_id"))
+                        .filmId(rs.getLong("film_id"))
+                        .userId(rs.getLong("user_id"))
+                        .build())
+                .optional();
     }
 
     @Override
     public List<Vote> findByFilmId(Long filmId) {
-        // TODO: SELECT 구현
-        return List.of();
+        String sql = """
+            SELECT vote_id, film_id, user_id
+            FROM vote
+            WHERE film_id = ?
+            ORDER BY vote_id DESC
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(filmId)
+                .query((rs, rowNum) -> Vote.builder()
+                        .voteId(rs.getLong("vote_id"))
+                        .filmId(rs.getLong("film_id"))
+                        .userId(rs.getLong("user_id"))
+                        .build())
+                .list();
     }
 
     @Override
     public List<Vote> findByUserId(Long userId) {
-        // TODO: SELECT 구현
-        return List.of();
+        String sql = """
+            SELECT vote_id, film_id, user_id
+            FROM vote
+            WHERE user_id = ?
+            ORDER BY vote_id DESC
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(userId)
+                .query((rs, rowNum) -> Vote.builder()
+                        .voteId(rs.getLong("vote_id"))
+                        .filmId(rs.getLong("film_id"))
+                        .userId(rs.getLong("user_id"))
+                        .build())
+                .list();
+    }
+
+    @Override
+    public Optional<Vote> findByUserIdAndFilmId(Long userId, Long filmId) {
+        String sql = """
+            SELECT vote_id, film_id, user_id
+            FROM vote
+            WHERE user_id = ? AND film_id = ?
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(userId)
+                .param(filmId)
+                .query((rs, rowNum) -> Vote.builder()
+                        .voteId(rs.getLong("vote_id"))
+                        .filmId(rs.getLong("film_id"))
+                        .userId(rs.getLong("user_id"))
+                        .build())
+                .optional();
     }
 
     @Override
     public int countByFilmId(Long filmId) {
-        // TODO: SELECT COUNT 구현
-        return 0;
+        String sql = "SELECT COUNT(*) FROM vote WHERE film_id = ?";
+        Integer count = jdbcClient.sql(sql)
+                .param(filmId)
+                .query(Integer.class)
+                .single();
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public int countByUserId(Long userId) {
+        String sql = "SELECT COUNT(*) FROM vote WHERE user_id = ?";
+        Integer count = jdbcClient.sql(sql)
+                .param(userId)
+                .query(Integer.class)
+                .single();
+        return count != null ? count : 0;
     }
 
     @Override
     public void deleteById(Long voteId) {
-        // TODO: DELETE 구현
+        String sql = "DELETE FROM vote WHERE vote_id = ?";
+        jdbcClient.sql(sql).param(voteId).update();
+    }
+
+    @Override
+    public void deleteByUserIdAndFilmId(Long userId, Long filmId) {
+        String sql = "DELETE FROM vote WHERE user_id = ? AND film_id = ?";
+        jdbcClient.sql(sql)
+                .param(userId)
+                .param(filmId)
+                .update();
+    }
+
+    private Vote insert(Vote vote) {
+        String sql = """
+            INSERT INTO vote (film_id, user_id)
+            VALUES (?, ?)
+            """;
+
+        var keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+
+        jdbcClient.sql(sql)
+                .param(vote.getFilmId())
+                .param(vote.getUserId())
+                .update(keyHolder);
+
+        Long id = ((Number) keyHolder.getKeys().get("vote_id")).longValue();
+        return Vote.builder()
+                .voteId(id)
+                .filmId(vote.getFilmId())
+                .userId(vote.getUserId())
+                .build();
+    }
+
+    private Vote update(Vote vote) {
+        String sql = """
+            UPDATE vote
+            SET film_id = ?, user_id = ?
+            WHERE vote_id = ?
+            """;
+
+        jdbcClient.sql(sql)
+                .param(vote.getFilmId())
+                .param(vote.getUserId())
+                .param(vote.getVoteId())
+                .update();
+
+        return vote;
     }
 }
 
