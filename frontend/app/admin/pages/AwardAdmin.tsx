@@ -6,102 +6,151 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trophy, Medal, Award, Crown, CheckCircle, Heart } from "lucide-react"
+import { api, resolveImageUrl } from "@/lib/api"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { useToastStore } from "@/store/toast"
 
-interface AwardFilm {
+interface RankingFilm {
     id: string
     title: string
     director: string
-    judgeAverageScore: number // 심사위원 평균 점수 (5점 만점)
-    likes: number // 관객 투표 수
+    judgeAverageScore: number
+    likes: number
+    finalScore: number
+    rank: number
+    genre?: string | null
+    image?: string | null
 }
 
-const MOCK_AWARD_FILMS: AwardFilm[] = [
-    {
-        id: '1',
-        title: '하늘을 나는 도시',
-        director: '김윤영',
-        judgeAverageScore: 4.5,
-        likes: 1240
-    },
-    {
-        id: '2',
-        title: '기억을 파는 상점',
-        director: '양준영',
-        judgeAverageScore: 4.5,
-        likes: 956
-    },
-    {
-        id: '3',
-        title: '시간이 멈춘 카페',
-        director: '임지우',
-        judgeAverageScore: 4.2,
-        likes: 1120
-    },
-    {
-        id: '4',
-        title: 'The Midnight Garden',
-        director: 'Sarah Chen',
-        judgeAverageScore: 4.3,
-        likes: 834
-    },
-    {
-        id: '5',
-        title: 'Echoes in the Cloud',
-        director: 'James Rivera',
-        judgeAverageScore: 4.0,
-        likes: 720
-    }
-]
+interface PopularityFilm {
+    id: string
+    title: string
+    director: string
+    likes: number
+    popularityRank: number
+    popularityScore: number
+    genre?: string | null
+    image?: string | null
+}
+
+interface FestivalOption {
+    id: string
+    name: string
+    startDate: string
+    endDate: string
+}
 
 export default function AwardAdmin() {
     const router = useRouter()
+    const { show } = useToastStore()
     const [isFinalized, setIsFinalized] = useState(false)
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+    const [loading, setLoading] = useState(true)
+    const [rankedFilms, setRankedFilms] = useState<RankingFilm[]>([])
+    const [popularityRankedFilms, setPopularityRankedFilms] = useState<PopularityFilm[]>([])
+    const [festivals, setFestivals] = useState<FestivalOption[]>([])
+    const [selectedFestivalId, setSelectedFestivalId] = useState<string | null>(null)
+
+    const selectedFestival = useMemo(
+        () => festivals.find((f) => f.id === selectedFestivalId) ?? null,
+        [festivals, selectedFestivalId]
+    )
+
+    const isFestivalEnded = useMemo(() => {
+        if (!selectedFestival) return false
+        const today = new Date()
+        const end = new Date(selectedFestival.endDate)
+        return end.getTime() < new Date(today.toDateString()).getTime()
+    }, [selectedFestival])
 
     useEffect(() => {
-        const finalized = localStorage.getItem('festivalFinalized') === 'true'
+        const fetchFestivals = async () => {
+            try {
+                const res = await api.getFestivals() as any[]
+                const mapped = res.map((f) => ({
+                    id: String(f.festivalId ?? f.id),
+                    name: f.festivalName,
+                    startDate: f.startDate,
+                    endDate: f.endDate,
+                })) as FestivalOption[]
+                setFestivals(mapped)
+                if (mapped.length > 0) {
+                    const first = mapped[0]
+                    setSelectedFestivalId(first.id)
+                    const finalized = localStorage.getItem(`festivalFinalized:${first.id}`) === 'true'
+                    setIsFinalized(finalized)
+                }
+            } catch (e) {
+                console.error(e)
+            }
+        }
+        fetchFestivals()
+    }, [])
+
+    useEffect(() => {
+        if (!selectedFestivalId) return
+        const fetchAwards = async () => {
+            setLoading(true)
+            try {
+                const [rankingRes, popularityRes] = await Promise.all([
+                    api.getAwardRankings(selectedFestivalId, 5) as unknown as any[],
+                    api.getAwardPopularity(selectedFestivalId, 3) as unknown as any[],
+                ])
+
+                const rankingWithDirector = await Promise.all(
+                    rankingRes.map(async (item) => {
+                        const detail = await api.getFilmDetail(item.filmId) as any
+                        return {
+                            id: String(item.filmId),
+                            title: item.title,
+                            director: detail?.director?.username ?? '감독 정보 없음',
+                            judgeAverageScore: item.judgeAverage ?? 0,
+                            likes: item.voteCount ?? 0,
+                            finalScore: item.finalScore ?? 0,
+                            rank: item.rank ?? 0,
+                            genre: item.genre ?? detail?.genre,
+                            image: resolveImageUrl(item.imageUrl ?? detail?.image),
+                            judgeScore100: (item.judgeAverage ?? 0) * 20,
+                            audienceScore100: item.voteCount ?? 0,
+                        }
+                    })
+                ) as (RankingFilm & { judgeScore100: number; audienceScore100: number })[]
+
+                const popularityWithDirector = await Promise.all(
+                    popularityRes.map(async (item) => {
+                        const detail = await api.getFilmDetail(item.filmId) as any
+                        return {
+                            id: String(item.filmId),
+                            title: item.title,
+                            director: detail?.director?.username ?? '감독 정보 없음',
+                            likes: item.voteCount ?? 0,
+                            popularityRank: item.rank ?? 0,
+                            popularityScore: item.voteCount ?? 0,
+                            genre: item.genre ?? detail?.genre,
+                            image: resolveImageUrl(item.imageUrl ?? detail?.image),
+                        }
+                    })
+                ) as PopularityFilm[]
+
+                setRankedFilms(rankingWithDirector)
+                setPopularityRankedFilms(popularityWithDirector)
+            } catch (e) {
+                console.error(e)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchAwards()
+        const finalized = localStorage.getItem(`festivalFinalized:${selectedFestivalId}`) === 'true'
         setIsFinalized(finalized)
-    }, [])
-
-    const rankedFilms = useMemo(() => {
-        // 좋아요 수를 100점 만점으로 정규화하기 위해 최대값을 찾습니다
-        const maxLikes = Math.max(...MOCK_AWARD_FILMS.map(f => f.likes))
-        
-        return MOCK_AWARD_FILMS
-            .map(film => {
-                const judgeScore100 = film.judgeAverageScore * 20
-                // 좋아요 수를 100점 만점으로 정규화
-                const audienceScore100 = (film.likes / maxLikes) * 100
-                const finalScore = judgeScore100 * 0.7 + audienceScore100 * 0.3
-
-                return {
-                    ...film,
-                    judgeScore100,
-                    audienceScore100,
-                    finalScore
-                }
-            })
-            .sort((a, b) => b.finalScore - a.finalScore)
-            .map((film, index) => ({
-                ...film,
-                rank: index + 1
-            }))
-    }, [])
-
-    const popularityRankedFilms = useMemo(() => {
-        return MOCK_AWARD_FILMS
-            .map(film => {
-                return {
-                    ...film,
-                    popularityScore: film.likes
-                }
-            })
-            .sort((a, b) => b.popularityScore - a.popularityScore)
-            .map((film, index) => ({
-                ...film,
-                popularityRank: index + 1
-            }))
-    }, [])
+    }, [selectedFestivalId])
 
     const getRankIcon = (rank: number) => {
         if (rank === 1) return <Trophy className="w-6 h-6 text-yellow-500" />
@@ -118,23 +167,49 @@ export default function AwardAdmin() {
     }
 
     const handleFinalizeAwards = () => {
-        localStorage.setItem('festivalFinalized', 'true')
-        localStorage.setItem('awardWinners', JSON.stringify(rankedFilms.slice(0, 3)))
-        localStorage.setItem('popularityWinner', JSON.stringify(popularityRankedFilms[0]))
-        setIsFinalized(true)
-        setShowConfirmDialog(false)
-        
-        router.push('/awards')
+        if (!selectedFestivalId) return
+        api.finalizeAwards(selectedFestivalId, 5, 3)
+            .then(() => {
+                localStorage.setItem(`festivalFinalized:${selectedFestivalId}`, 'true')
+                localStorage.setItem(`awardWinners:${selectedFestivalId}`, JSON.stringify(rankedFilms.slice(0, 3)))
+                localStorage.setItem(`popularityWinner:${selectedFestivalId}`, JSON.stringify(popularityRankedFilms[0]))
+                setIsFinalized(true)
+                setShowConfirmDialog(false)
+                show({ message: '수상작이 최종 확정되었습니다.', kind: 'success' })
+                router.push('/awards')
+            })
+            .catch((e) => {
+                console.error(e)
+                show({ message: '수상작 확정에 실패했습니다.', kind: 'error' })
+            })
     }
 
     return (
         <div className="p-6 border-border h-full">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">수상작 후보</h2>
-                {!isFinalized ? (
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold">수상작 후보</h2>
+                    <Select
+                        value={selectedFestivalId ?? undefined}
+                        onValueChange={(val) => setSelectedFestivalId(val)}
+                    >
+                        <SelectTrigger className="min-w-[200px]">
+                            <SelectValue placeholder="영화제를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {festivals.map((f) => (
+                                <SelectItem key={f.id} value={f.id}>
+                                    {f.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                {!isFinalized && !isFestivalEnded ? (
                     <Button 
                         onClick={() => setShowConfirmDialog(true)}
                         className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold"
+                        disabled={!selectedFestivalId}
                     >
                         <Crown className="w-4 h-4 mr-2" />
                         수상작 선정 최종 확정
@@ -142,7 +217,7 @@ export default function AwardAdmin() {
                 ) : (
                     <Badge className="bg-green-500/20 text-green-500 border-green-500/30 px-4 py-2">
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        수상작 확정 완료
+                        {isFestivalEnded ? '종료된 영화제' : '수상작 확정 완료'}
                     </Badge>
                 )}
             </div>
@@ -246,7 +321,19 @@ export default function AwardAdmin() {
             {/* 종합 부문 수상작 후보 */}
             <h3 className="text-xl font-bold mb-4">종합 부문 (상위 5개)</h3>
             <div className="grid grid-cols-1 gap-4 mb-8">
-                {rankedFilms.slice(0, 5).map((film) => (
+                {loading
+                    ? Array.from({ length: 5 }).map((_, idx) => (
+                        <Card key={`skeleton-rank-${idx}`} className="p-6 bg-card border-border">
+                            <div className="h-4 w-32 bg-muted animate-pulse rounded mb-2" />
+                            <div className="h-3 w-48 bg-muted animate-pulse rounded mb-4" />
+                            <div className="h-3 w-full bg-muted animate-pulse rounded" />
+                        </Card>
+                    ))
+                    : rankedFilms.length === 0 ? (
+                        <Card className="p-6 bg-card border-border">
+                            <p className="text-sm text-muted-foreground">해당 영화제에 제출 완료된 작품이 없습니다.</p>
+                        </Card>
+                    ) : rankedFilms.slice(0, 5).map((film) => (
                     <Card key={film.id} className="group overflow-hidden p-6 bg-card border-border hover:border-primary transition cursor-pointer">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-4 flex-1">
@@ -272,7 +359,7 @@ export default function AwardAdmin() {
                                     <span className="text-base text-muted-foreground font-normal">/5.0</span>
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    ({film.judgeScore100.toFixed(1)}점 만점)
+                                    ({film.judgeScore100?.toFixed(1) ?? '0.0'}점 만점)
                                 </p>
                             </div>
                             <div>
@@ -282,7 +369,7 @@ export default function AwardAdmin() {
                                     {film.likes.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    ({film.audienceScore100.toFixed(1)}점 환산)
+                                    ({film.audienceScore100?.toFixed(1) ?? '0.0'}점 환산)
                                 </p>
                             </div>
                             <div>
@@ -306,21 +393,32 @@ export default function AwardAdmin() {
                 인기상 부문 (상위 3개)
             </h3>
             <div className="grid grid-cols-1 gap-4">
-                {popularityRankedFilms.slice(0, 3).map((film) => (
-                    <div key={film.id} className="relative">
-                        {/* 2위, 3위만 카드 위에 배지 표시 */}
-                        {(film.popularityRank === 2 || film.popularityRank === 3) && (
-                            <div className="flex justify-center mb-2">
-                                <Badge className={
-                                    film.popularityRank === 2
-                                        ? "bg-pink-400/20 text-pink-400 border-pink-400/30"
-                                        : "bg-pink-300/20 text-pink-300 border-pink-300/30"
-                                }>
-                                    인기상 {film.popularityRank}위
-                                </Badge>
-                            </div>
-                        )}
-                        <Card className="group overflow-hidden p-6 bg-card border-border hover:border-pink-500 transition cursor-pointer">
+                {loading
+                    ? Array.from({ length: 3 }).map((_, idx) => (
+                        <Card key={`skeleton-pop-${idx}`} className="p-6 bg-card border-border">
+                            <div className="h-4 w-32 bg-muted animate-pulse rounded mb-2" />
+                            <div className="h-3 w-48 bg-muted animate-pulse rounded mb-4" />
+                            <div className="h-3 w-full bg-muted animate-pulse rounded" />
+                        </Card>
+                    ))
+                    : popularityRankedFilms.length === 0 ? (
+                        <Card className="p-6 bg-card border-border">
+                            <p className="text-sm text-muted-foreground">해당 영화제의 인기상 후보가 없습니다.</p>
+                        </Card>
+                    ) : popularityRankedFilms.slice(0, 3).map((film) => (
+                    <div key={film.id}>
+                        <Card className="relative group overflow-hidden p-6 bg-card border-border hover:border-pink-500 transition cursor-pointer">
+                            {(film.popularityRank === 2 || film.popularityRank === 3) && (
+                                <div className="absolute right-4 top-4">
+                                    <Badge className={
+                                        film.popularityRank === 2
+                                            ? "bg-pink-400/20 text-pink-400 border-pink-400/30"
+                                            : "bg-pink-300/20 text-pink-300 border-pink-300/30"
+                                    }>
+                                        인기상 {film.popularityRank}위
+                                    </Badge>
+                                </div>
+                            )}
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-4 flex-1">
                                     <div className="flex items-center justify-center w-12 h-12 rounded-full bg-pink-500/10">
