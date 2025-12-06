@@ -16,6 +16,7 @@ public class Award {
     private Long filmId;
     private Long festivalId;
     private String awardName;
+    private Integer rank;
     private LocalDateTime announcedAt;
 }
 
