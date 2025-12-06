@@ -10,12 +10,12 @@ import java.util.stream.Collectors;
 public class FestivalDtoMapper {
     
     public FestivalResponse toFestivalResponse(FilmFestival festival) {
-        return FestivalResponse.builder()
-                .festivalId(festival.getFestivalId())
-                .festivalName(festival.getFestivalName())
-                .startDate(festival.getStartDate())
-                .endDate(festival.getEndDate())
-                .build();
+        return FestivalResponse.of(
+                festival.getFestivalId(),
+                festival.getFestivalName(),
+                festival.getStartDate(),
+                festival.getEndDate()
+        );
     }
 
     public List<FestivalResponse> toFestivalResponseList(List<FilmFestival> festivals) {
