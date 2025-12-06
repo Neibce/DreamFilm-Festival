@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { ToastContainer } from '@/components/toast-container'
 
 const pretendard = localFont({
   src: [
@@ -61,6 +62,7 @@ export default function RootLayout({
       <body className={`antialiased`}>
         {children}
         <Analytics />
+        <ToastContainer />
       </body>
     </html>
   )
