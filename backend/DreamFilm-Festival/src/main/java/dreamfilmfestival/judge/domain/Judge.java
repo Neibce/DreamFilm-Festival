@@ -15,7 +15,10 @@ public class Judge {
     private Long judgeId;
     private Long filmId;
     private Long userId;
-    private Integer score;
+    private Integer creativity;
+    private Integer execution;
+    private Integer emotionalImpact;
+    private Integer storytelling;
     private String comment;
     private LocalDateTime judgedAt;
 }

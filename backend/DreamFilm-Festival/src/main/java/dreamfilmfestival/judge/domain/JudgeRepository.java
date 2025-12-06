@@ -8,6 +8,8 @@ public interface JudgeRepository {
     Optional<Judge> findById(Long judgeId);
     List<Judge> findByFilmId(Long filmId);
     List<Judge> findByUserId(Long userId);
+    List<Judge> findAll();
+    Optional<Judge> findByFilmIdAndUserId(Long filmId, Long userId);
     void deleteById(Long judgeId);
 }
 
