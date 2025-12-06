@@ -22,6 +22,8 @@ interface WriteReviewModalProps {
   onReviewTextChange: (text: string) => void
   onSubmit: () => void
   onCancel: () => void
+  onPrepareOpen?: () => void
+  mode?: 'create' | 'edit'
 }
 
 export function WriteReviewModal({
@@ -35,20 +37,31 @@ export function WriteReviewModal({
   onHoveredRatingChange,
   onReviewTextChange,
   onSubmit,
-  onCancel
+  onCancel,
+  onPrepareOpen,
+  mode = 'create'
 }: WriteReviewModalProps) {
+  const triggerLabel = mode === 'edit' ? '리뷰 수정' : '리뷰 작성'
+  const submitLabel = mode === 'edit' ? '수정하기' : '등록하기'
+  const titleLabel = mode === 'edit' ? '리뷰 수정' : '리뷰 작성'
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="default" size="sm" className="text-xs">
+        <Button
+          variant="default"
+          size="sm"
+          className="text-xs"
+          onClick={onPrepareOpen}
+        >
           <Edit className="w-3.5 h-3.5 mr-1" />
-          리뷰 작성
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            리뷰 작성
+            {titleLabel}
           </DialogTitle>
           <DialogDescription>
             {filmTitle}에 대한 평점과 리뷰를 남겨주세요
@@ -123,7 +136,7 @@ export function WriteReviewModal({
             onClick={onSubmit}
             disabled={rating === 0}
           >
-            등록하기
+            {submitLabel}
           </Button>
         </div>
       </DialogContent>

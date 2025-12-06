@@ -123,6 +123,28 @@ public class JdbcFilmFestivalRepository implements FilmFestivalRepository {
     }
 
     @Override
+    public boolean existsOverlappingFestival(java.time.LocalDate startDate, java.time.LocalDate endDate, Long excludedFestivalId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM film_festival
+            WHERE start_date <= ? AND end_date >= ?
+            """;
+
+        String finalSql = excludedFestivalId == null ? sql : sql + " AND festival_id <> ?";
+
+        var query = jdbcClient.sql(finalSql)
+                .param(Date.valueOf(endDate))
+                .param(Date.valueOf(startDate));
+
+        if (excludedFestivalId != null) {
+            query = query.param(excludedFestivalId);
+        }
+
+        Long count = query.query(Long.class).single();
+        return count > 0;
+    }
+
+    @Override
     public void deleteById(Long festivalId) {
         String sql = "DELETE FROM film_festival WHERE festival_id = ?";
         jdbcClient.sql(sql).param(festivalId).update();

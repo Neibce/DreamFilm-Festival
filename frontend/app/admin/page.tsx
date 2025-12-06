@@ -7,9 +7,14 @@ import { Card } from '@/components/ui/card'
 import { useState } from 'react';
 import { Film, BarChart2, Award, Clapperboard, Users, Settings } from 'lucide-react'
 import AdminContent from './AdminContent'
+import { useRoleGuard } from '@/hooks/useRoleGuard'
 
 export default function AdminPage() {
   const [selectedMenu, setSelectedMenu] = useState<string>('출품 관리')
+  const { authorized, checking } = useRoleGuard('ADMIN')
+
+  if (checking) return null
+  if (!authorized) return null
 
   const NAV_ITEMS = [
     { label: '출품 관리', icon: Film },

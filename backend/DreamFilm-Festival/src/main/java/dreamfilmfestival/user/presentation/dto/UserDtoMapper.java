@@ -12,22 +12,22 @@ import org.springframework.stereotype.Component;
 public class UserDtoMapper {
 
     public SignUpResponse toSignUpResponse(User user) {
-        return SignUpResponse.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .createdAt(user.getCreatedAt())
-                .build();
+        return SignUpResponse.of(
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getCreatedAt()
+        );
     }
 
     public LoginResponse toLoginResponse(User user) {
-        return LoginResponse.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .build();
+        return LoginResponse.of(
+            user.getUserId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole()
+        );
     }
 }
 

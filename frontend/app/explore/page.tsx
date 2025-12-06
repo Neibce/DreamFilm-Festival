@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useState, useEffect } from 'react'
-import { Heart, Star, MessageCircle, Filter } from 'lucide-react'
+import { api, resolveImageUrl } from '@/lib/api'
+import { Heart, Star, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
+import { useToastStore } from '@/store/toast'
 
 interface Film {
   id: string
@@ -24,110 +26,137 @@ interface Film {
   dreamSummary: string
 }
 
-export const MOCK_FILMS: Film[] = [
-  {
-    id: '1',
-    title: 'The Midnight Garden',
-    director: 'Sarah Chen',
-    genre: '판타지',
-    status: '승인 완료',
-    image: '/fantasy-film-poster.jpg',
-    rating: 4.8,
-    votes: 1240,
-    reviews: 89,
-    likes: 1240,
-    dreamSummary: 'A surreal garden that exists between dreams and reality'
-  },
-  {
-    id: '2',
-    title: 'Echoes in the Cloud',
-    director: 'James Rivera',
-    genre: 'SF',
-    status: '승인 완료',
-    image: '/sci-fi-movie-poster.png',
-    rating: 4.6,
-    votes: 956,
-    reviews: 72,
-    likes: 956,
-    dreamSummary: 'Two souls communicating through digital dreams'
-  },
-  {
-    id: '3',
-    title: 'The Lost Kingdom',
-    director: 'Emma Thompson',
-    genre: 'Adventure Fantasy',
-    status: '승인 완료',
-    image: '/adventure-fantasy-film.jpg',
-    rating: 4.7,
-    votes: 1120,
-    reviews: 95,
-    likes: 1120,
-    dreamSummary: 'An ancient civilization revealed through ancestral memories'
-  },
-  {
-    id: '4',
-    title: 'Neon Requiem',
-    director: 'Alex Kim',
-    genre: '공포/스릴러',
-    status: '승인 완료',
-    image: '/cyberpunk-movie-poster.png',
-    rating: 4.5,
-    votes: 834,
-    reviews: 61,
-    likes: 834,
-    dreamSummary: 'A noir detective story in a digital dreamscape'
-  },
-  {
-    id: '5',
-    title: 'Whispers of Tomorrow',
-    director: 'Sophie Laurent',
-    genre: '드라마',
-    status: '승인 완료',
-    image: '/drama-film-poster.jpg',
-    rating: 0,
-    votes: 0,
-    reviews: 0,
-    likes: 720,
-    dreamSummary: 'A poetic journey through possible futures'
-  },
-]
-
 export default function ExplorePage() {
+  const VOTE_LIMIT = 3
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedGenre, setSelectedGenre] = useState<string>('전체')
   const [favorited, setFavorited] = useState<Set<string>>(new Set())
+  const [remainingVotes, setRemainingVotes] = useState(VOTE_LIMIT)
+  const [loadingVotes, setLoadingVotes] = useState(true)
+  const [films, setFilms] = useState<Film[]>([])
+  const [loading, setLoading] = useState(true)
+  const { show } = useToastStore()
 
-  // Load favorited films from localStorage on mount
+  // 서버 기준 내 투표 목록 불러오기
   useEffect(() => {
-    const saved = localStorage.getItem('votedFilms')
-    if (saved) {
-      setFavorited(new Set(JSON.parse(saved)))
-    }
+    let mounted = true
+    setLoadingVotes(true)
+    api.getMyVotes()
+      .then((votes) => {
+        if (!mounted) return
+        const voteList = Array.isArray(votes) ? votes : []
+        const voteIds = new Set<string>(voteList.map((v: any) => String(v.filmId)))
+        setFavorited(voteIds)
+        setRemainingVotes(Math.max(0, VOTE_LIMIT - voteIds.size))
+      })
+      .catch(() => {
+        if (!mounted) return
+        setFavorited(new Set())
+        setRemainingVotes(VOTE_LIMIT)
+      })
+      .finally(() => {
+        if (mounted) setLoadingVotes(false)
+      })
+    return () => { mounted = false }
   }, [])
+
+  // Fetch films from backend (진행 중 영화제만)
+  useEffect(() => {
+    let mounted = true
+    setLoading(true)
+
+    const search = searchTerm.trim()
+    const genre = selectedGenre === '전체' ? undefined : selectedGenre
+
+    api
+      .getOngoingFilms({
+        search: search.length > 0 ? search : undefined,
+        genre,
+      })
+      .then((res) => {
+        if (!mounted) return
+        const mapped: Film[] = (res as any[]).map((f) => ({
+          id: String(f.filmId),
+          title: f.title,
+          director: f.director?.username
+            ? f.director.username
+            : (f.directorId ? `감독 #${f.directorId}` : '감독 미상'),
+          cinematography: 'Gemini',
+          genre: f.genre || '전체',
+          status: '승인 완료',
+          image: resolveImageUrl(f.imageUrl) || '/placeholder.svg',
+          rating: f.averageRating ?? 0,
+          votes: f.reviewCount ?? 0,
+          reviews: f.reviewCount ?? 0,
+          likes: f.voteCount ?? 0,
+          dreamSummary: f.summary || '소개가 없습니다.',
+        }))
+        setFilms(mapped)
+        setLoading(false)
+      })
+      .catch(() => {
+        if (!mounted) return
+        setLoading(false)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [searchTerm, selectedGenre])
 
   const genres = ['전체', '판타지', 'SF', '로맨스', '어드벤처', '드라마', '공포/스릴러']
 
-  const filteredFilms = MOCK_FILMS.filter(film => {
-    const matchesSearch = film.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      film.director.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesGenre = selectedGenre === '전체' || film.genre === selectedGenre
-    return matchesSearch && matchesGenre
-  })
-
   const toggleFavorite = (filmId: string) => {
-    const newFavorited = new Set(favorited)
-    if (newFavorited.has(filmId)) {
-      newFavorited.delete(filmId)
-    } else {
-      // Check if user has already voted for 3 films
-      if (newFavorited.size >= 3) {
-        alert('최대 3개 작품까지만 투표할 수 있습니다.')
-        return
-      }
-      newFavorited.add(filmId)
+    if (loadingVotes) return
+
+    if (favorited.has(filmId)) {
+      // optimistic remove
+      setFavorited(prev => {
+        const updated = new Set(prev)
+        updated.delete(filmId)
+        setRemainingVotes(Math.max(0, VOTE_LIMIT - updated.size))
+        return updated
+      })
+      setFilms(prev => prev.map(f => f.id === filmId ? { ...f, likes: Math.max((f.likes || 0) - 1, 0) } : f))
+
+      api.deleteVote(filmId).catch(() => {
+        // rollback
+        setFavorited(prev => {
+          const updated = new Set(prev)
+          updated.add(filmId)
+          setRemainingVotes(Math.max(0, VOTE_LIMIT - updated.size))
+          return updated
+        })
+        setFilms(prev => prev.map(f => f.id === filmId ? { ...f, likes: (f.likes || 0) + 1 } : f))
+        show({ message: '투표를 취소하지 못했습니다.', kind: 'error' })
+      })
+      return
     }
-    setFavorited(newFavorited)
-    localStorage.setItem('votedFilms', JSON.stringify(Array.from(newFavorited)))
+
+    if (favorited.size >= VOTE_LIMIT) {
+      show({ message: `최대 ${VOTE_LIMIT}개 작품까지만 투표할 수 있습니다.`, kind: 'error' })
+      return
+    }
+
+    // optimistic add
+    setFavorited(prev => {
+      const updated = new Set(prev)
+      updated.add(filmId)
+      setRemainingVotes(Math.max(0, VOTE_LIMIT - updated.size))
+      return updated
+    })
+    setFilms(prev => prev.map(f => f.id === filmId ? { ...f, likes: (f.likes || 0) + 1 } : f))
+
+    api.postVote(filmId).catch(() => {
+      // rollback
+      setFavorited(prev => {
+        const updated = new Set(prev)
+        updated.delete(filmId)
+        setRemainingVotes(Math.max(0, VOTE_LIMIT - updated.size))
+        return updated
+      })
+      setFilms(prev => prev.map(f => f.id === filmId ? { ...f, likes: Math.max((f.likes || 0) - 1, 0) } : f))
+      show({ message: '투표에 실패했습니다.', kind: 'error' })
+    })
   }
 
   return (
@@ -146,7 +175,7 @@ export default function ExplorePage() {
           <div className="flex items-center gap-2 mb-8">
             <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 mt-3 px-3 py-1">
               <Heart className="w-3.5 h-3.5 mr-1.5" />
-              최대 3개 작품까지 투표 가능 ({favorited.size}/3)
+              남은 투표: {remainingVotes}/{VOTE_LIMIT}
             </Badge>
           </div>
 
@@ -181,19 +210,34 @@ export default function ExplorePage() {
       {/* Films Grid */}
       <section className="py-8 px-4 md:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {filteredFilms.length === 0 ? (
+          {loading && films.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <Card key={idx} className="pt-0 pb-2 bg-card border-border h-full">
+                  <div className="relative h-90 bg-muted animate-pulse" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-full bg-muted animate-pulse rounded" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : films.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">No films found. Try adjusting your search.</p>
+              <p className="text-muted-foreground text-lg">
+                상영작이 없습니다. 검색어를 조정해보세요.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredFilms.map((film) => (
+              {films.map((film) => (
                 <Link key={film.id} href={`/films/${film.id}`}>
                   <Card
                     className="pt-0 pb-2 group overflow-hidden hover:border-primary transition cursor-pointer bg-card border-border h-full hover:shadow-lg hover:shadow-primary/50 hover:ring-2 hover:ring-primary/20"
                   >
                     {/* Film Image */}
-                    <div className="relative h-90 overflow-hidden bg-muted">
+                    <div className="relative overflow-hidden bg-muted aspect-[4/5]">
                       <img
                         src={film.image || "/placeholder.svg"}
                         alt={film.title}
@@ -233,7 +277,7 @@ export default function ExplorePage() {
                     {/* Film Info */}
                     <div className="p-4 space-y-3">
                       <div>
-                        <h3 className="font-bold text-foreground group-hover:text-primary transition line-clamp-2">
+                        <h3 className="font-bold text-foreground group-hover:text-primary transition break-words whitespace-normal leading-tight text-balance">
                           {film.title}
                         </h3>
                         <p className="text-sm text-muted-foreground">{film.director}</p>

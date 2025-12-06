@@ -13,24 +13,20 @@ import java.util.Optional;
 public class ReviewService {
     private final ReviewRepository reviewRepository;
 
-    public Review createReview(Review review) {
-        return reviewRepository.save(review);
-    }
-
-    public Optional<Review> getReviewById(Long reviewId) {
-        return reviewRepository.findById(reviewId);
-    }
-
     public List<Review> getReviewsByFilmId(Long filmId) {
-        return reviewRepository.findByFilmId(filmId);
+        return reviewRepository.findByFilmId(filmId, null);
     }
 
-    public List<Review> getReviewsByUserId(Long userId) {
-        return reviewRepository.findByUserId(userId);
+    public List<Review> getReviewsByFilmId(Long filmId, String sort) {
+        return reviewRepository.findByFilmId(filmId, sort);
     }
 
-    public void deleteReview(Long reviewId) {
-        reviewRepository.deleteById(reviewId);
+    public Optional<Review> getReviewByFilmAndUser(Long filmId, Long userId) {
+        return reviewRepository.findByFilmIdAndUserId(filmId, userId);
+    }
+
+    public Review saveReview(Review review) {
+        return reviewRepository.save(review);
     }
 }
 

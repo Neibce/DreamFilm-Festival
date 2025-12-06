@@ -115,9 +115,42 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
-    public List<User> findAll() {
-        // 현재 요구사항에서 사용하지 않음
-        throw new UnsupportedOperationException("현재 지원하지 않는 기능입니다.");
+    public List<User> findAll(String sortField, String sortDirection) {
+        boolean hasSortField = sortField != null && !sortField.isBlank();
+        String normalizedField = sortField == null ? "" : sortField.toLowerCase();
+        String column = "created_at";
+        if (hasSortField) {
+            switch (normalizedField) {
+                case "name" -> column = "username";
+                case "role" -> column = "role";
+                case "createdat" -> column = "created_at";
+                default -> column = "created_at";
+            }
+        }
+
+        String direction = "ASC";
+        if (!hasSortField) {
+            direction = "DESC"; // 기존 기본 정렬 유지
+        } else if ("desc".equalsIgnoreCase(sortDirection)) {
+            direction = "DESC";
+        }
+
+        String sql = String.format("""
+            SELECT user_id, username, password, role, email, created_at
+            FROM "user"
+            ORDER BY %s %s
+            """, column, direction);
+
+        return jdbcClient.sql(sql)
+                .query((rs, rowNum) -> User.builder()
+                        .userId(rs.getLong("user_id"))
+                        .username(rs.getString("username"))
+                        .password(rs.getString("password"))
+                        .role(UserRole.valueOf(rs.getString("role")))
+                        .email(rs.getString("email"))
+                        .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
+                        .build())
+                .list();
     }
 
     @Override

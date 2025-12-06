@@ -22,8 +22,9 @@ public class OpenAiScriptGenerator implements AiScriptGenerator {
     private final ObjectMapper objectMapper;
 
     @Override
-    public Mono<GeneratedScript> generate(String dreamText) {
-        log.info("OpenAI 시나리오 생성 시작: dreamText length={}", dreamText.length());
+    public Mono<GeneratedScript> generate(String title, String dreamText, String genre, String mood, String themes) {
+        log.info("OpenAI 시나리오 생성 시작: title='{}', genre='{}', mood='{}', themes='{}', dreamText length={}",
+                title, genre, mood, themes, dreamText.length());
 
         Map<String, Object> request = Map.of(
                 "model", "gpt-4.1-mini",
@@ -32,14 +33,14 @@ public class OpenAiScriptGenerator implements AiScriptGenerator {
                                 Map.of("type", "input_text", "text",
                                         """
                                         너는 AI 꿈 영화제의 공식 영화 소개 작성자야.
-                                        사용자가 입력한 **꿈** 내용을 바탕으로, 그 꿈을 모티브로 제작된 가상의 영화 소개글을 작성해줘.
+                                        사용자가 입력한 **영화 제목**, **장르**, **꿈의 분위기**, **테마**, **꿈 내용**을 바탕으로, 그 꿈을 모티브로 제작된 가상의 영화 소개글을 작성해줘.
                                         
                                         ### 응답 형식
                                         반드시 JSON 형식으로만 응답해야 해. 다른 설명은 포함하지 마.
                                         
                                         {
-                                            "summary": "한 문단 요약글(100자 내외)",
-                                            "script": "영화 소개글 (최소 300자 이상)"
+                                            "summary": "한 문단 요약글 (120~180자)",
+                                            "script": "영화 소개글 (최소 700자, 4개 이상 문단, 문단 사이 빈 줄로 구분)"
                                         }
                                         
                                         ### 작성 규칙
@@ -47,8 +48,22 @@ public class OpenAiScriptGenerator implements AiScriptGenerator {
                                         2. 줄거리를 모두 밝히지 말고, 관객이 궁금증을 느끼도록 설정
                                         3. 감정의 흐름, 세계관, 주요 인물 혹은 상징 요소를 영화적으로 매력 있게 표현
                                         4. 분위기가 선명히 드러나는 문장 사용
-                                        5. 소개글은 최소 300자 이상
+                                        5. **script는 최소 700자**, **4개 이상 문단**으로 나누고 **문단 사이에 빈 줄**을 넣어 가독성을 높일 것
+                                        6. 불릿, 마크다운, 따옴표 블록 없이 순수 텍스트로 작성
+                                        7. summary는 120~180자로 한 문단으로 작성
                                         
+                                        ### 입력된 영화 제목:
+                                        """ + title + """
+
+                                        ### 지정된 장르:
+                                        """ + genre + """
+
+                                        ### 꿈의 분위기:
+                                        """ + mood + """
+
+                                        ### 테마 키워드:
+                                        """ + themes + """
+
                                         ### 입력된 꿈 내용:
                                         """ + dreamText)
                         ))

@@ -13,7 +13,27 @@ import java.util.Optional;
 public class VoteService {
     private final VoteRepository voteRepository;
 
-    public Vote createVote(Vote vote) {
+    public Vote createVote(Long filmId, Long userId) {
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
+        var userVotes = voteRepository.findByUserId(userId);
+        if (userVotes.size() >= 3) {
+            throw new IllegalStateException("사용자당 최대 3개 작품만 투표할 수 있습니다.");
+        }
+
+        boolean alreadyVoted = userVotes.stream()
+                .anyMatch(v -> v.getFilmId().equals(filmId));
+        if (alreadyVoted) {
+            throw new IllegalArgumentException("이미 해당 작품에 투표했습니다.");
+        }
+
+        Vote vote = Vote.builder()
+                .filmId(filmId)
+                .userId(userId)
+                .build();
+
         return voteRepository.save(vote);
     }
 
@@ -29,8 +49,41 @@ public class VoteService {
         return voteRepository.findByUserId(userId);
     }
 
+    public int countVotesByUserId(Long userId) {
+        return voteRepository.countByUserId(userId);
+    }
+
+    public int getRemainingVotes(Long userId, int limit) {
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        int used = voteRepository.countByUserId(userId);
+        int remaining = limit - used;
+        return Math.max(remaining, 0);
+    }
+
+    public boolean hasUserVotedForFilm(Long userId, Long filmId) {
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        return voteRepository.findByUserIdAndFilmId(userId, filmId).isPresent();
+    }
+
     public int countVotesByFilmId(Long filmId) {
         return voteRepository.countByFilmId(filmId);
+    }
+
+    public void deleteVoteByUserAndFilm(Long userId, Long filmId) {
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
+        var existing = voteRepository.findByUserIdAndFilmId(userId, filmId);
+        if (existing.isEmpty()) {
+            throw new IllegalArgumentException("해당 작품에 대한 투표가 없습니다.");
+        }
+
+        voteRepository.deleteByUserIdAndFilmId(userId, filmId);
     }
 
     public void deleteVote(Long voteId) {

@@ -1,11 +1,17 @@
 package dreamfilmfestival.judge.presentation;
 
+import dreamfilmfestival.judge.application.JudgeQueryService;
 import dreamfilmfestival.judge.application.JudgeService;
 import dreamfilmfestival.judge.domain.Judge;
+import dreamfilmfestival.judge.presentation.dto.JudgeProgressResponse;
+import dreamfilmfestival.judge.presentation.dto.JudgeResponse;
+import dreamfilmfestival.judge.presentation.dto.JudgeSubmitRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -13,36 +19,59 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JudgeController {
     private final JudgeService judgeService;
+    private final JudgeQueryService judgeQueryService;
 
-    @PostMapping
-    public ResponseEntity<Judge> createJudge(@RequestBody Judge judge) {
-        Judge createdJudge = judgeService.createJudge(judge);
-        return ResponseEntity.ok(createdJudge);
+    @GetMapping("/progress")
+    public ResponseEntity<List<JudgeProgressResponse>> getProgress() {
+        List<JudgeProgressResponse> responses = judgeQueryService.getProgress().stream()
+                .map(p -> JudgeProgressResponse.of(
+                        p.userId(),
+                        p.username(),
+                        p.email(),
+                        p.totalFilms(),
+                        p.reviewedFilms(),
+                        p.pendingFilms(),
+                        p.completionRate()
+                ))
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
-    @GetMapping("/{judgeId}")
-    public ResponseEntity<Judge> getJudgeById(@PathVariable Long judgeId) {
-        return judgeService.getJudgeById(judgeId)
+    @PostMapping("/film/{filmId}")
+    public ResponseEntity<JudgeResponse> submitScores(
+            @PathVariable Long filmId,
+            @Valid @RequestBody JudgeSubmitRequest request,
+            HttpSession session
+    ) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        Judge saved = judgeService.submitScores(
+                filmId,
+                userId,
+                request.creativity(),
+                request.execution(),
+                request.emotionalImpact(),
+                request.storytelling(),
+                request.comment()
+        );
+        return ResponseEntity.ok(JudgeResponse.from(saved));
+    }
+
+    @GetMapping("/film/{filmId}/me")
+    public ResponseEntity<JudgeResponse> getMyScore(
+            @PathVariable Long filmId,
+            HttpSession session
+    ) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        return judgeService.findByFilmIdAndUserId(filmId, userId)
+                .map(JudgeResponse::from)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/film/{filmId}")
-    public ResponseEntity<List<Judge>> getJudgesByFilmId(@PathVariable Long filmId) {
-        List<Judge> judges = judgeService.getJudgesByFilmId(filmId);
-        return ResponseEntity.ok(judges);
-    }
-
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Judge>> getJudgesByUserId(@PathVariable Long userId) {
-        List<Judge> judges = judgeService.getJudgesByUserId(userId);
-        return ResponseEntity.ok(judges);
-    }
-
-    @DeleteMapping("/{judgeId}")
-    public ResponseEntity<Void> deleteJudge(@PathVariable Long judgeId) {
-        judgeService.deleteJudge(judgeId);
-        return ResponseEntity.noContent().build();
+                .orElse(ResponseEntity.noContent().build());
     }
 }
 

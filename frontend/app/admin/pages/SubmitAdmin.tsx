@@ -5,59 +5,61 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Clock, CircleEllipsis } from "lucide-react"
+import { api, resolveImageUrl } from "@/lib/api"
+import { useToastStore } from "@/store/toast"
 
 interface Submission {
     id: string
     title: string
     director: string
-    email: string
-    dreamConcept: string
     genre: string
     status: "pending" | "approved" | "rejected"
-    submittedAt: string
+    dreamConcept: string
     poster?: string
 }
 
-const MOCK_SUBMISSIONS: Submission[] = [
-    {
-        id: "1",
-        title: "자정의 정원",
-        director: "사라 첸",
-        email: "sarah@email.com",
-        dreamConcept: "꿈과 현실 사이에 존재하는 초현실적인 정원. 그곳에서는 시간이 거꾸로 흐르고, 잊혀진 기억들이 꽃으로 피어난다.",
-        genre: "판타지 드라마",
-        status: "approved",
-        submittedAt: "2시간 전",
-        poster: "/fantasy-garden-movie-poster.jpg",
-    },
-    {
-        id: "2",
-        title: "구름 속의 메아리",
-        director: "제임스 리베라",
-        email: "james@email.com",
-        dreamConcept: "디지털 꿈을 통해 소통하는 두 영혼. 서버가 다운될 때마다 그들은 서로의 꿈 속에서만 만날 수 있다.",
-        genre: "SF 로맨스",
-        status: "pending",
-        submittedAt: "30분 전",
-        poster: "/scifi-romance-movie-poster.jpg",
-    },
-    {
-        id: "3",
-        title: "잃어버린 지평선",
-        director: "마이크 존슨",
-        email: "mike@email.com",
-        dreamConcept: "탐험가가 또 다른 차원으로의 포탈을 발견하다. 그곳은 중력이 없고 모든 것이 부유하는 세상이다.",
-        genre: "모험",
-        status: "rejected",
-        submittedAt: "5시간 전",
-        poster: "/adventure-dimension-movie-poster.jpg",
-    },
-]
-
 export default function SubmitAdmin() {
-    const [submissions, setSubmissions] = useState<Submission[]>(MOCK_SUBMISSIONS)
-    const [selectedFilmId, setSelectedFilmId] = useState<string | undefined>(MOCK_SUBMISSIONS[0]?.id)
+    const [submissions, setSubmissions] = useState<Submission[]>([])
+    const [selectedFilmId, setSelectedFilmId] = useState<string | undefined>(undefined)
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+    const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
+    const { show } = useToastStore()
+
+    useEffect(() => {
+        let mounted = true
+        setLoading(true)
+        api.getFilmsAdmin()
+            .then((res) => {
+                if (!mounted) return
+                const mapped: Submission[] = (res as any[]).map((f) => ({
+                    id: String(f.filmId),
+                    title: f.title,
+                    director: f.director?.username
+                        ? f.director.username
+                        : (f.directorName ? f.directorName : (f.directorId ? `감독 #${f.directorId}` : '감독 미상')),
+                    genre: f.genre || '전체',
+                    status: f.status === 'SUBMITTED' ? 'approved'
+                        : f.status === 'REJECTED' ? 'rejected'
+                        : 'pending',
+                    dreamConcept: f.dreamText || f.summary || '내용 없음',
+                    poster: resolveImageUrl(f.imageUrl) || '/placeholder.svg',
+                }))
+                setSubmissions(mapped)
+                if (mapped.length > 0) {
+                    setSelectedFilmId(mapped[0].id)
+                }
+            })
+            .catch((err: Error) => {
+                if (!mounted) return
+                show({ message: err.message || '출품작을 불러오지 못했습니다.', kind: 'error' })
+                setSubmissions([])
+            })
+            .finally(() => {
+                if (mounted) setLoading(false)
+            })
+        return () => { mounted = false }
+    }, [show])
 
     const filteredSubmissions = useMemo(() => {
         return statusFilter === 'all'
@@ -84,18 +86,23 @@ export default function SubmitAdmin() {
     }, [filteredSubmissions, selectedFilmId])
 
     const handleStatusChange = (id: string, newStatus: "approved" | "rejected") => {
-        setSubmissions(prev => prev.map(s =>
-            s.id === id ? { ...s, status: newStatus } : s
-        ))
+        if (submitting) return
+        setSubmitting(true)
+        const apiCall = newStatus === 'approved'
+            ? api.approveFilmAdmin(id)
+            : api.rejectFilmAdmin(id)
 
-        if (statusFilter === 'pending') {
-            const nextPending = submissions.find(s => s.status === 'pending' && s.id !== id)
-            if (nextPending) {
-                setSelectedFilmId(nextPending.id)
-            } else {
-                setSelectedFilmId(undefined)
-            }
-        }
+        Promise.resolve(apiCall)
+            .then(() => {
+                setSubmissions(prev => prev.map(s =>
+                    s.id === id ? { ...s, status: newStatus } : s
+                ))
+                show({ message: newStatus === 'approved' ? '승인되었습니다.' : '반려되었습니다.', kind: 'success' })
+            })
+            .catch((err: Error) => {
+                show({ message: err.message || '처리에 실패했습니다.', kind: 'error' })
+            })
+            .finally(() => setSubmitting(false))
     }
 
     return (
@@ -108,78 +115,91 @@ export default function SubmitAdmin() {
 
             {/* Stats / Filter Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <Card
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setStatusFilter('all')}
-                    className={`p-6 bg-card border transition ${
-                        statusFilter === 'all'
-                            ? 'border-primary shadow-[0_0_0_2px] shadow-primary/30'
-                            : 'border-border hover:border-primary/60'
-                    }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-muted-foreground mb-1">전체 출품작</p>
-                            <p className="text-3xl font-bold text-foreground">{totalCount}</p>
-                        </div>
-                        <CircleEllipsis className="w-8 h-8 text-primary" />
-                    </div>
-                </Card>
-                <Card
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setStatusFilter('pending')}
-                    className={`p-6 bg-card border transition ${
-                        statusFilter === 'pending'
-                            ? 'border-yellow-500 shadow-[0_0_0_2px] shadow-yellow-500/30'
-                            : 'border-border hover:border-yellow-500/60'
-                    }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-muted-foreground mb-1">심사 대기</p>
-                            <p className="text-3xl font-bold text-yellow-500">{pendingCount}</p>
-                        </div>
-                        <Clock className="w-8 h-8 text-yellow-500" />
-                    </div>
-                </Card>
-                <Card
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setStatusFilter('approved')}
-                    className={`p-6 bg-card border transition ${
-                        statusFilter === 'approved'
-                            ? 'border-green-500 shadow-[0_0_0_2px] shadow-green-500/30'
-                            : 'border-border hover:border-green-500/60'
-                    }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-muted-foreground mb-1">승인됨</p>
-                            <p className="text-3xl font-bold text-green-500">{approvedCount}</p>
-                        </div>
-                        <CheckCircle className="w-8 h-8 text-green-500" />
-                    </div>
-                </Card>
-                <Card
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setStatusFilter('rejected')}
-                    className={`p-6 bg-card border transition ${
-                        statusFilter === 'rejected'
-                            ? 'border-red-500 shadow-[0_0_0_2px] shadow-red-500/30'
-                            : 'border-border hover:border-red-500/60'
-                    }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-muted-foreground mb-1">반려됨</p>
-                            <p className="text-3xl font-bold text-red-500">{rejectedCount}</p>
-                        </div>
-                        <XCircle className="w-8 h-8 text-red-500" />
-                    </div>
-                </Card>
+                {loading ? (
+                    <>
+                        {[1,2,3,4].map(i => (
+                            <Card key={i} className="p-6 bg-card border animate-pulse space-y-3">
+                                <div className="h-4 w-24 bg-muted rounded" />
+                                <div className="h-8 w-16 bg-muted rounded" />
+                            </Card>
+                        ))}
+                    </>
+                ) : (
+                    <>
+                        <Card
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setStatusFilter('all')}
+                            className={`p-6 bg-card border transition ${
+                                statusFilter === 'all'
+                                    ? 'border-primary shadow-[0_0_0_2px] shadow-primary/30'
+                                    : 'border-border hover:border-primary/60'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">전체 출품작</p>
+                                    <p className="text-3xl font-bold text-foreground">{totalCount}</p>
+                                </div>
+                                <CircleEllipsis className="w-8 h-8 text-primary" />
+                            </div>
+                        </Card>
+                        <Card
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setStatusFilter('pending')}
+                            className={`p-6 bg-card border transition ${
+                                statusFilter === 'pending'
+                                    ? 'border-yellow-500 shadow-[0_0_0_2px] shadow-yellow-500/30'
+                                    : 'border-border hover:border-yellow-500/60'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">심사 대기</p>
+                                    <p className="text-3xl font-bold text-yellow-500">{pendingCount}</p>
+                                </div>
+                                <Clock className="w-8 h-8 text-yellow-500" />
+                            </div>
+                        </Card>
+                        <Card
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setStatusFilter('approved')}
+                            className={`p-6 bg-card border transition ${
+                                statusFilter === 'approved'
+                                    ? 'border-green-500 shadow-[0_0_0_2px] shadow-green-500/30'
+                                    : 'border-border hover:border-green-500/60'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">승인됨</p>
+                                    <p className="text-3xl font-bold text-green-500">{approvedCount}</p>
+                                </div>
+                                <CheckCircle className="w-8 h-8 text-green-500" />
+                            </div>
+                        </Card>
+                        <Card
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setStatusFilter('rejected')}
+                            className={`p-6 bg-card border transition ${
+                                statusFilter === 'rejected'
+                                    ? 'border-red-500 shadow-[0_0_0_2px] shadow-red-500/30'
+                                    : 'border-border hover:border-red-500/60'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">반려됨</p>
+                                    <p className="text-3xl font-bold text-red-500">{rejectedCount}</p>
+                                </div>
+                                <XCircle className="w-8 h-8 text-red-500" />
+                            </div>
+                        </Card>
+                    </>
+                )}
             </div>
 
             {/* Main Content */}
@@ -187,7 +207,7 @@ export default function SubmitAdmin() {
                 {/* Film List */}
                 <div className="lg:col-span-1">
                     <h2 className="text-lg font-semibold text-foreground mb-4">출품작 목록</h2>
-                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                    <div className="space-y-3 max-h-[620px] min-h-[460px] overflow-y-auto pr-1 p-3 scrollbar-elegant rounded-2xl border border-border/60 bg-card/60">
                         {filteredSubmissions.length === 0 ? (
                             <div className="p-6 border border-dashed border-border rounded-lg text-center text-sm text-muted-foreground">
                                 선택한 상태에 해당하는 작품이 없습니다.
@@ -227,8 +247,8 @@ export default function SubmitAdmin() {
                 {selectedFilm && (
                     <div className="lg:col-span-2 space-y-6">
                         {/* Film Card */}
-                        <Card className="overflow-hidden bg-card border-border">
-                            <div className="h-96 overflow-hidden">
+                        <Card className="overflow-hidden bg-card border-border pt-0">
+                            <div className="aspect-[4/5] w-full overflow-hidden bg-muted">
                                 <img
                                     src={selectedFilm.poster || "/placeholder.svg"}
                                     alt={selectedFilm.title}
@@ -254,17 +274,6 @@ export default function SubmitAdmin() {
                                             반려됨
                                         </Badge>
                                     )}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-6 pt-2">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground mb-1">감독 이메일</p>
-                                        <p className="text-foreground">{selectedFilm.email}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground mb-1">제출 일시</p>
-                                        <p className="text-foreground">{selectedFilm.submittedAt}</p>
-                                    </div>
                                 </div>
 
                                 <div>

@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEffect, useMemo, useState } from 'react'
 import { Star, CheckCircle, CircleEllipsis, Clock, Edit } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
+import { api, resolveImageUrl } from '@/lib/api'
+import { useToastStore } from '@/store/toast'
+import { useRoleGuard } from '@/hooks/useRoleGuard'
 
 type FilmScore = {
   creativity: number
@@ -29,54 +32,6 @@ interface JudgingFilm {
   review?: string
 }
 
-const MOCK_JUDGING_FILMS: JudgingFilm[] = [
-  {
-    id: '1',
-    title: '하늘을 나는 도시',
-    director: '김윤영',
-    genre: '판타지',
-    image: '/fantasy-film-poster.jpg',
-    dreamDescription: 
-      `처음에는 아무도 눈치 채지 못했다. 새벽녘, 도시의 가장 깊은 곳에서 마치 거대한 심장이 뛰는 듯한 진동이 울리기 시작했다. 건물의 벽이 미세하게 흔들리고, 가로등 불빛이 떨렸다.
-      사람들은 지진이라 생각해 바닥을 살폈지만, 흔들리는 것은 땅이 아니라 도시 전체였다. 
-      잠시 뒤, 소리가 완전히 멈추자 믿기 어려운 일이 일어났다.
-      도시가 땅에서 떨어지기 시작했다.
-
-      바퀴도, 추진 장치도 보이지 않았다. 마치 보이지 않는 손이 도시를 통째로 들어 올리는 것처럼, 아파트 단지, 고층 빌딩, 공원, 도로, 자동차—모든 것이 그대로 들려 올랐다.
-      창밖으로 내려다본 땅은 점점 멀어졌고, 사람들의 비명과 환호가 뒤섞였다. 누군가는 울부짖었고, 누군가는 감탄하며 스마트폰을 꺼내 들었다. 하지만 와이파이는 이미 끊긴 지 오래였다.
-
-      도시가 구름에 닿는 순간, 놀라운 변화가 시작됐다.
-      구름은 마치 단단한 바닥처럼 도시 아래로 밀려들어와 하얀 해변처럼 펼쳐졌다. 건물 사이로 흘러들어온 구름은 안개처럼 번지며 발끝을 간지럽혔고, 구름 위로 걸으면 발자국이 천천히 사라졌다. 마치 새 세계가 열리는 듯했다.
-
-      이상하게도 하늘은 더 가까워졌는데, 바람은 거의 불지 않았다. 도시가 공중에 떠 있는데도 흔들리지 않았고, 소음도 줄어들었다. 엔진 소리도, 자동차 경적도, 지하철의 굉음도 사라졌다.
-      대신, 희미한 공명 같은 소리가 도시 전체에 울려 퍼졌다. 마치 도시 자체가 살아 숨 쉬는 생명체처럼.
-
-      사람들은 공포와 호기심 사이에서 방황했다.
-      어떤 이들은 구름이 바다처럼 펼쳐진 가장자리에서 끝없는 아래쪽 하늘을 내려다보며 공허함에 빠졌다. 또 어떤 이들은 높은 건물 옥상에 올라가 별과 달이 평소보다 가깝게 보이는 기이한 광경에 매료되었다.`,
-    status: '심사 대기'
-  },
-  {
-    id: '2',
-    title: '기억을 파는 상점',
-    director: '양준영',
-    genre: 'SF',
-    image: '/sci-fi-movie-poster.png',
-    dreamDescription: 'Two souls communicating through digital dreams',
-    status: '심사 완료',
-    scores: { creativity: 5, execution: 4, emotional_impact: 5, storytelling: 4 },
-    review: '독창적인 아이디어와 감동적인 연출이 돋보이는 작품입니다.'
-  },
-  {
-    id: '3',
-    title: '시간이 멈춘 카페',
-    director: '임지우',
-    genre: '어드벤처',
-    image: '/adventure-film-poster.jpg',
-    dreamDescription: 'An explorer finds a portal to another dimension',
-    status: '심사 대기'
-  }
-]
-
 interface ScoreLine {
   criterion: string
   icon: string
@@ -92,8 +47,8 @@ const SCORE_LABELS: Record<keyof FilmScore, string> = {
 }
 
 export default function JudgePage() {
-  const [films, setFilms] = useState(MOCK_JUDGING_FILMS)
-  const [selectedFilmId, setSelectedFilmId] = useState<string | undefined>(MOCK_JUDGING_FILMS[0]?.id)
+  const [films, setFilms] = useState<JudgingFilm[]>([])
+  const [selectedFilmId, setSelectedFilmId] = useState<string | undefined>(undefined)
   const [statusFilter, setStatusFilter] = useState<'all' | '심사 대기' | '심사 완료'>('all')
   const [isFestivalFinalized, setIsFestivalFinalized] = useState(false)
   const [currentScores, setCurrentScores] = useState<FilmScore>({
@@ -105,8 +60,18 @@ export default function JudgePage() {
   const [currentReview, setCurrentReview] = useState('')
   const [isEditingCompleted, setIsEditingCompleted] = useState(false)
   const [festivalPeriod, setFestivalPeriod] = useState<{ startDate: string; endDate: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const { show } = useToastStore()
+  const { authorized, checking } = useRoleGuard('JUDGE')
+
+  // 권한 확인 전까지 UI/데이터 호출을 막아 조용히 처리
+  if (checking) return null
+  if (!authorized) return null
 
   useEffect(() => {
+    if (!authorized) return
     const finalized = localStorage.getItem('festivalFinalized') === 'true'
     setIsFestivalFinalized(finalized)
     
@@ -120,7 +85,120 @@ export default function JudgePage() {
         console.error('Failed to parse festival period:', e)
       }
     }
-  }, [])
+  }, [authorized])
+
+  // 영화제 기간을 API에서 가져와 상태/로컬스토리지에 반영
+  useEffect(() => {
+    if (!authorized) return
+    let mounted = true
+    api.getFestivals()
+      .then((res: any) => {
+        const festivals = Array.isArray(res) ? res : []
+        if (!mounted) return
+        const today = new Date()
+        const ongoing = festivals.find((f) => {
+          if (!f?.endDate) return false
+          const end = new Date(f.endDate)
+          return end >= today
+        })
+        if (ongoing?.startDate && ongoing?.endDate) {
+          const period = { startDate: ongoing.startDate, endDate: ongoing.endDate }
+          setFestivalPeriod(period)
+          localStorage.setItem('currentFestivalPeriod', JSON.stringify(period))
+        }
+      })
+      .catch((err: Error) => {
+        if (!mounted) return
+        show({ message: err.message || '영화제 정보를 불러오지 못했습니다.', kind: 'error' })
+      })
+    return () => { mounted = false }
+  }, [authorized, show])
+
+  useEffect(() => {
+    if (!authorized) return
+    let mounted = true
+    setLoading(true)
+    api.getFilms()
+      .then((res) => {
+        if (!mounted) return
+        const mapped: JudgingFilm[] = (res as any[]).map((f) => ({
+          id: String(f.filmId),
+          title: f.title,
+          director: f.director?.username
+            ? f.director.username
+            : (f.directorName ? f.directorName : (f.directorId ? `감독 #${f.directorId}` : '감독 미상')),
+          genre: f.genre || '전체',
+          image: resolveImageUrl(f.imageUrl) || '/placeholder.svg',
+          dreamDescription: '',
+          status: '심사 대기',
+          scores: undefined,
+          review: ''
+        }))
+        setFilms(mapped)
+        if (mapped.length > 0) {
+          setSelectedFilmId(mapped[0].id)
+        }
+      })
+      .catch((err: Error) => {
+        if (!mounted) return
+        show({ message: err.message || '상영작을 불러오지 못했습니다.', kind: 'error' })
+        setFilms([])
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => { mounted = false }
+  }, [authorized, show])
+
+  // Fetch detail for selected film to load full dream text
+  useEffect(() => {
+    if (!authorized || !selectedFilmId) return
+    let mounted = true
+    setDetailLoading(true)
+    Promise.all([
+      api.getFilmDetail(selectedFilmId),
+      api.getMyJudgeScore(selectedFilmId).catch(() => null)
+    ])
+      .then((f: any) => {
+        if (!mounted) return
+        const filmDetail = Array.isArray(f) ? f[0] : f
+        const myScore = Array.isArray(f) ? f[1] : null
+
+        setFilms(prev => prev.map(film => film.id === selectedFilmId ? {
+          ...film,
+          dreamDescription: filmDetail?.dreamText || '소개가 없습니다.',
+          scores: myScore ? {
+            creativity: myScore.creativity ?? 0,
+            execution: myScore.execution ?? 0,
+            emotional_impact: myScore.emotionalImpact ?? 0,
+            storytelling: myScore.storytelling ?? 0
+          } as any : film.scores,
+          review: myScore?.comment ?? film.review,
+          status: myScore ? '심사 완료' : film.status
+        } : film))
+
+        if (myScore) {
+          setCurrentScores({
+            creativity: myScore.creativity ?? 0,
+            execution: myScore.execution ?? 0,
+            emotional_impact: myScore.emotionalImpact ?? 0,
+            storytelling: myScore.storytelling ?? 0,
+          } as any)
+          setCurrentReview(myScore.comment ?? '')
+        } else {
+          setCurrentScores({ creativity: 0, execution: 0, emotional_impact: 0, storytelling: 0 })
+          setCurrentReview('')
+        }
+      })
+      .catch((err: Error) => {
+        if (!mounted) return
+        show({ message: err.message || '영화 상세를 불러오지 못했습니다.', kind: 'error' })
+      })
+      .finally(() => {
+        if (mounted) setDetailLoading(false)
+      })
+    return () => { mounted = false }
+  }, [authorized, selectedFilmId, show])
 
   const filteredFilms = useMemo(() => {
     return statusFilter === 'all'
@@ -169,17 +247,28 @@ export default function JudgePage() {
   }
 
   const handleSubmitScores = () => {
-    if (!selectedFilm || !canSubmitScores || isFestivalFinalized) return
-    setFilms(films.map(f => 
-      f.id === selectedFilmId 
-        ? { ...f, status: '심사 완료', scores: currentScores, review: currentReview }
-        : f
-    ))
-    setCurrentScores({ creativity: 0, execution: 0, emotional_impact: 0, storytelling: 0 })
-    setCurrentReview('')
-    setIsEditingCompleted(false)
-    const nextPending = films.find(f => f.status === '심사 대기' && f.id !== selectedFilmId)
-    if (nextPending) setSelectedFilmId(nextPending.id)
+    if (!authorized || !selectedFilm || !canSubmitScores || isFestivalFinalized || submitting) return
+    setSubmitting(true)
+    api.submitJudgeScore(selectedFilm.id, {
+      creativity: currentScores.creativity,
+      execution: currentScores.execution,
+      emotionalImpact: currentScores.emotional_impact,
+      storytelling: currentScores.storytelling,
+      comment: currentReview,
+    })
+      .then(() => {
+        setFilms(films.map(f => 
+          f.id === selectedFilmId 
+            ? { ...f, status: '심사 완료', scores: currentScores, review: currentReview }
+            : f
+        ))
+        setIsEditingCompleted(false)
+        show({ message: '심사 결과가 저장되었습니다.', kind: 'success' })
+      })
+      .catch((err: Error) => {
+        show({ message: err.message || '심사 저장에 실패했습니다.', kind: 'error' })
+      })
+      .finally(() => setSubmitting(false))
   }
 
   const handleEditCompleted = () => {
@@ -196,6 +285,7 @@ export default function JudgePage() {
   const averageScore = selectedFilm?.scores 
     ? (selectedFilm.scores.creativity + selectedFilm.scores.execution + selectedFilm.scores.emotional_impact + selectedFilm.scores.storytelling) / 4 
     : 0
+  const isListLoading = loading && films.length === 0
 
   return (
     <main className="min-h-screen bg-background">
@@ -234,6 +324,7 @@ export default function JudgePage() {
               )
             })()}
           </div>
+
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -300,8 +391,17 @@ export default function JudgePage() {
             {/* Film List */}
             <div className="lg:col-span-1">
               <h2 className="text-lg font-bold text-foreground mb-4">출품작 목록</h2>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {filteredFilms.length === 0 ? (
+              <div className="space-y-3 max-h-[560px] min-h-[420px] overflow-y-auto pr-1 p-3 scrollbar-elegant rounded-2xl border border-border/60 bg-card/60">
+                {isListLoading ? (
+                  <>
+                    {[1,2,3].map(i => (
+                      <Card key={i} className="p-4 bg-card border-border animate-pulse space-y-2">
+                        <div className="h-4 w-2/3 bg-muted rounded" />
+                        <div className="h-3 w-1/3 bg-muted rounded" />
+                      </Card>
+                    ))}
+                  </>
+                ) : filteredFilms.length === 0 ? (
                   <div className="p-6 border border-dashed border-border rounded-lg text-center text-sm text-muted-foreground">
                     선택한 상태에 해당하는 작품이 없습니다.
                   </div>
@@ -332,8 +432,8 @@ export default function JudgePage() {
             {selectedFilm && (
               <div className="lg:col-span-2 space-y-6">
                 {/* Film Card */}
-                <Card className="overflow-hidden bg-card border-border">
-                  <div className="h-96 overflow-hidden">
+                <Card className="overflow-hidden bg-card border-border pt-0">
+                  <div className="relative overflow-hidden bg-muted aspect-[4/5]">
                     <img
                       src={selectedFilm.image || "/placeholder.svg"}
                       alt={selectedFilm.title}
@@ -357,7 +457,11 @@ export default function JudgePage() {
                     </div>
 
                     <div>
-                      <p className="text-foreground">{selectedFilm.dreamDescription}</p>
+                    <p className="text-foreground whitespace-pre-line">
+                      {detailLoading && !selectedFilm.dreamDescription
+                        ? '내용을 불러오는 중입니다...'
+                        : (selectedFilm.dreamDescription || '내용이 없습니다.')}
+                    </p>
                     </div>
                   </div>
                 </Card>

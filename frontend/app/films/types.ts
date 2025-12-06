@@ -1,5 +1,6 @@
 export interface Review {
   id: string
+  userId?: string
   author: string
   rating: number
   text: string
@@ -11,6 +12,7 @@ export interface Film {
   id: string
   title: string
   director: string
+  directorId?: string
   genre: string
   status: 'approved' | 'pending' | 'rejected'
   image: string
@@ -26,5 +28,5 @@ export interface Film {
   awards?: string
 }
 
-export type SortType = 'helpful' | 'recent' | 'rating'
+export type SortType = 'recent' | 'rating'
 

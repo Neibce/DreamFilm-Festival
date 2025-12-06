@@ -9,6 +9,32 @@ import { Label } from '@/components/ui/label'
 import { useState } from 'react'
 import Link from 'next/link'
 import { UserPlus, Mail, Lock, User } from 'lucide-react'
+import { api } from '@/lib/api'
+import { useRouter } from 'next/navigation'
+import { useToastStore } from '@/store/toast'
+
+type ToastKind = 'success' | 'error'
+
+function Toast({ message, kind, onClose }: { message: string; kind: ToastKind; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 2000)
+    return () => clearTimeout(t)
+  }, [onClose])
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      <div
+        className={`rounded-lg px-4 py-3 shadow-lg border text-sm ${
+          kind === 'success'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-800'
+        }`}
+      >
+        {message}
+      </div>
+    </div>
+  )
+}
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +43,9 @@ export default function SignupPage() {
     password: '',
     confirmPassword: '',
   })
+  const [loading, setLoading] = useState(false)
+  const { show } = useToastStore()
+  const router = useRouter()
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -30,10 +59,22 @@ export default function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (isFormValid) {
-      console.log('회원가입 시도:', formData)
-      alert('회원가입이 완료되었습니다!')
-    }
+    if (!isFormValid || loading) return
+    setLoading(true)
+    api.signUp({
+      username: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: 'AUDIENCE'
+    })
+      .then(() => {
+        show({ message: '회원가입이 완료되었습니다!', kind: 'success' })
+        router.push('/login')
+      })
+      .catch((err: Error) => {
+        show({ message: err.message || '회원가입에 실패했습니다.', kind: 'error' })
+      })
+      .finally(() => setLoading(false))
   }
 
   return (
@@ -134,7 +175,7 @@ export default function SignupPage() {
 
               <Button
                 type="submit"
-                disabled={!isFormValid}
+                disabled={!isFormValid || loading}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
@@ -153,6 +194,8 @@ export default function SignupPage() {
           </Card>
         </div>
       </section>
+
+      {/* ToastContainer is rendered globally in layout */}
     </main>
   )
 }

@@ -9,5 +9,6 @@ public interface AwardRepository {
     List<Award> findByFilmId(Long filmId);
     List<Award> findByFestivalId(Long festivalId);
     void deleteById(Long awardId);
+    void deleteByFestivalId(Long festivalId);
 }
 

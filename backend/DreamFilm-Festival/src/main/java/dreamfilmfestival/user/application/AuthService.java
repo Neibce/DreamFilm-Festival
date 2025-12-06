@@ -14,14 +14,19 @@ public class AuthService {
     private final UserRepository userRepository;
 
     public User login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
-        if (!user.isPasswordMatch(request.getPassword())) {
+        if (!user.isPasswordMatch(request.password())) {
             throw new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
 
         return user;
+    }
+
+    public User getMe(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
     }
 }
 
