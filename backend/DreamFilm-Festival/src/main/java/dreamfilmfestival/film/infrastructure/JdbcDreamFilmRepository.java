@@ -30,8 +30,8 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
     private DreamFilm insert(DreamFilm film) {
         String sql = """
             INSERT INTO dream_film (festival_id, director_id, title, dream_text, 
-                                   ai_script, summary, created_at, status, image_url)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   ai_script, summary, genre, created_at, status, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -43,6 +43,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                 .param(film.getDreamText())
                 .param(film.getAiScript())
                 .param(film.getSummary())
+                .param(film.getGenre())
                 .param(Timestamp.valueOf(film.getCreatedAt()))
                 .param(film.getStatus().name())
                 .param(film.getImageUrl())
@@ -57,6 +58,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                 .dreamText(film.getDreamText())
                 .aiScript(film.getAiScript())
                 .summary(film.getSummary())
+                .genre(film.getGenre())
                 .createdAt(film.getCreatedAt())
                 .status(film.getStatus())
                 .imageUrl(film.getImageUrl())
@@ -67,7 +69,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
         String sql = """
             UPDATE dream_film
             SET festival_id = ?, director_id = ?, title = ?, dream_text = ?,
-                ai_script = ?, summary = ?, status = ?, image_url = ?
+                ai_script = ?, summary = ?, genre = ?, status = ?, image_url = ?
             WHERE film_id = ?
             """;
 
@@ -78,6 +80,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                 .param(film.getDreamText())
                 .param(film.getAiScript())
                 .param(film.getSummary())
+                .param(film.getGenre())
                 .param(film.getStatus().name())
                 .param(film.getImageUrl())
                 .param(film.getFilmId())
@@ -90,7 +93,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
     public Optional<DreamFilm> findById(Long filmId) {
         String sql = """
             SELECT film_id, festival_id, director_id, title, dream_text,
-                   ai_script, summary, created_at, status, image_url
+                   ai_script, summary, genre, created_at, status, image_url
             FROM dream_film
             WHERE film_id = ?
             """;
@@ -105,6 +108,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                         .dreamText(rs.getString("dream_text"))
                         .aiScript(rs.getString("ai_script"))
                         .summary(rs.getString("summary"))
+                        .genre(rs.getString("genre"))
                         .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                         .status(FilmStatus.valueOf(rs.getString("status")))
                         .imageUrl(rs.getString("image_url"))
@@ -116,7 +120,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
     public List<DreamFilm> findAll() {
         String sql = """
             SELECT film_id, festival_id, director_id, title, dream_text,
-                   ai_script, summary, created_at, status, image_url
+                   ai_script, summary, genre, created_at, status, image_url
             FROM dream_film
             ORDER BY created_at DESC
             """;
@@ -130,6 +134,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                         .dreamText(rs.getString("dream_text"))
                         .aiScript(rs.getString("ai_script"))
                         .summary(rs.getString("summary"))
+                        .genre(rs.getString("genre"))
                         .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                         .status(FilmStatus.valueOf(rs.getString("status")))
                         .imageUrl(rs.getString("image_url"))
@@ -141,7 +146,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
     public List<DreamFilm> findByFestivalId(Long festivalId) {
         String sql = """
             SELECT film_id, festival_id, director_id, title, dream_text,
-                   ai_script, summary, created_at, status, image_url
+                   ai_script, summary, genre, created_at, status, image_url
             FROM dream_film
             WHERE festival_id = ?
             ORDER BY created_at DESC
@@ -157,6 +162,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                         .dreamText(rs.getString("dream_text"))
                         .aiScript(rs.getString("ai_script"))
                         .summary(rs.getString("summary"))
+                        .genre(rs.getString("genre"))
                         .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                         .status(FilmStatus.valueOf(rs.getString("status")))
                         .imageUrl(rs.getString("image_url"))
@@ -168,7 +174,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
     public List<DreamFilm> findByDirectorId(Long directorId) {
         String sql = """
             SELECT film_id, festival_id, director_id, title, dream_text,
-                   ai_script, summary, created_at, status, image_url
+                   ai_script, summary, genre, created_at, status, image_url
             FROM dream_film
             WHERE director_id = ?
             ORDER BY created_at DESC
@@ -184,6 +190,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                         .dreamText(rs.getString("dream_text"))
                         .aiScript(rs.getString("ai_script"))
                         .summary(rs.getString("summary"))
+                        .genre(rs.getString("genre"))
                         .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                         .status(FilmStatus.valueOf(rs.getString("status")))
                         .imageUrl(rs.getString("image_url"))
@@ -195,7 +202,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
     public List<DreamFilm> findByStatus(FilmStatus status) {
         String sql = """
             SELECT film_id, festival_id, director_id, title, dream_text,
-                   ai_script, summary, created_at, status, image_url
+                   ai_script, summary, genre, created_at, status, image_url
             FROM dream_film
             WHERE status = ?
             ORDER BY created_at DESC
@@ -211,6 +218,7 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
                         .dreamText(rs.getString("dream_text"))
                         .aiScript(rs.getString("ai_script"))
                         .summary(rs.getString("summary"))
+                        .genre(rs.getString("genre"))
                         .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                         .status(FilmStatus.valueOf(rs.getString("status")))
                         .imageUrl(rs.getString("image_url"))
