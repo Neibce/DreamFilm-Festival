@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { User, Shield, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { User, Shield, ArrowUpDown, ArrowUp, ArrowDown, Activity, Users, MessageSquare } from "lucide-react"
 import { api } from "@/lib/api"
 import { useToastStore } from "@/store/toast"
 
@@ -31,6 +31,7 @@ export default function UserAuthority() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<Record<string, boolean>>({})
+  const [activityStats, setActivityStats] = useState({ activeUsers: 0, engagedUsers: 0, reviewOnlyUsers: 0 })
   const { show } = useToastStore()
 
   const fetchUsers = (field: SortField, direction: SortDirection) => {
@@ -57,6 +58,10 @@ export default function UserAuthority() {
 
   useEffect(() => {
     fetchUsers(sortField, sortDirection)
+    // 활동 통계 조회 (UNION/INTERSECT/EXCEPT)
+    api.getUserActivityStats()
+      .then((res) => setActivityStats(res))
+      .catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -129,7 +134,7 @@ export default function UserAuthority() {
         <p className="text-muted-foreground">사용자의 역할과 권한을 관리하세요.</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - 역할별 */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {loading ? (
           <>
@@ -179,6 +184,34 @@ export default function UserAuthority() {
             </Card>
           </>
         )}
+      </div>
+
+      {/* Stats Cards - 활동 통계 (UNION/INTERSECT/EXCEPT) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">활동 사용자</p>
+            <Activity className="w-5 h-5 text-green-500" />
+          </div>
+          <p className="text-3xl font-bold text-green-500">{activityStats.activeUsers}</p>
+          <p className="text-xs text-muted-foreground mt-1">투표 또는 리뷰 작성</p>
+        </Card>
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">적극 참여자</p>
+            <Users className="w-5 h-5 text-purple-500" />
+          </div>
+          <p className="text-3xl font-bold text-purple-500">{activityStats.engagedUsers}</p>
+          <p className="text-xs text-muted-foreground mt-1">투표와 리뷰 모두 참여</p>
+        </Card>
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-muted-foreground">리뷰만 작성</p>
+            <MessageSquare className="w-5 h-5 text-orange-500" />
+          </div>
+          <p className="text-3xl font-bold text-orange-500">{activityStats.reviewOnlyUsers}</p>
+          <p className="text-xs text-muted-foreground mt-1">리뷰는 작성, 투표는 미참여</p>
+        </Card>
       </div>
 
       {/* Users List */}

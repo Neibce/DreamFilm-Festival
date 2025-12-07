@@ -21,6 +21,7 @@ export interface Film {
   reviews: number
   likes: number
   dreamTheme: string
+  aiScript?: string
   releaseDate?: string
   runtime?: string
   description?: string

@@ -354,7 +354,7 @@ export default function SubmitPage() {
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">AI 시나리오 생성 중...</h2>
                 <p className="text-muted-foreground">
-                  꿈 내용과 제목, 분위기, 테마를 바탕으로 시나리오와 포스터 콘셉트를 만들고 있어요. 상태가 완료될 때까지 자동으로 기다립니다.
+                  꿈 내용과 제목, 분위기, 테마를 바탕으로 시나리오와 포스터 콘셉트를 만들고 있어요.
                 </p>
               </div>
               <div className="bg-background border border-border rounded-lg p-4 text-left text-sm text-muted-foreground space-y-2">

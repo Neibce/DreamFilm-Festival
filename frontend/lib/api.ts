@@ -112,6 +112,14 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getJudgesProgress: () => request('/api/judges/progress'),
+  getUserActivityStats: () => request<{ activeUsers: number; engagedUsers: number; reviewOnlyUsers: number }>('/api/users/stats/activity'),
+  getTopRatedFilms: (minRating: number = 0) => request<{ filmId: number; reviewCount: number; avgRating: number }[]>(`/api/reviews/films/top-rated?minRating=${minRating}`),
+  // LEFT JOIN - 영화 + 감독 정보 조회
+  getFilmsWithDirector: () => request('/api/films/with-director'),
+  // View - 영화 상세 정보 조회
+  getFilmDetailsFromView: (filmId: string | number) => request(`/api/films/${filmId}/view-details`),
+  // View - 영화 랭킹 조회
+  getFilmRanking: (limit: number = 10) => request(`/api/films/ranking?limit=${limit}`),
   getAwardRankings: (festivalId: string | number, limit = 5) =>
     request(`/api/awards/rankings?festivalId=${festivalId}&limit=${limit}`),
   getAwardPopularity: (festivalId: string | number, limit = 3) =>
