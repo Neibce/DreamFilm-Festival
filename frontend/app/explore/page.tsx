@@ -11,6 +11,7 @@ import { api, resolveImageUrl } from '@/lib/api'
 import { Heart, Star, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useToastStore } from '@/store/toast'
+import { useAuthStore } from '@/store/auth'
 
 interface Film {
   id: string
@@ -38,6 +39,13 @@ export default function ExplorePage() {
   const [films, setFilms] = useState<Film[]>([])
   const [loading, setLoading] = useState(true)
   const { show } = useToastStore()
+  const { user, fetchMeOnce } = useAuthStore()
+
+  useEffect(() => {
+    fetchMeOnce()
+  }, [fetchMeOnce])
+
+  const isAudience = (user?.role || '').toUpperCase() === 'AUDIENCE'
 
   // 서버 기준 내 투표 목록 불러오기
   useEffect(() => {
@@ -132,9 +140,9 @@ export default function ExplorePage() {
   const genres = ['전체', '판타지', 'SF', '로맨스', '어드벤처', '드라마', '공포/스릴러']
   const ratingOptions = [
     { label: '전체', value: 0 },
-    { label: '3점 이상', value: 3 },
-    { label: '4점 이상', value: 4 },
     { label: '4.5점 이상', value: 4.5 },
+    { label: '4점 이상', value: 4 },
+    { label: '3점 이상', value: 3 },
   ]
 
   const toggleFavorite = (filmId: string) => {
@@ -303,22 +311,24 @@ export default function ExplorePage() {
                         </Badge>
                       </div>
 
-                      {/* Like Button */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          toggleFavorite(film.id)
-                        }}
-                        className="absolute top-3 left-3 p-2 rounded-full bg-background/80 hover:bg-background transition backdrop-blur-sm"
-                      >
-                        <Heart
-                          className={`w-5 h-5 transition ${
-                            favorited.has(film.id)
-                              ? 'fill-pink-500 text-pink-500'
-                              : 'text-foreground'
-                          }`}
-                        />
-                      </button>
+                      {/* Like Button (관객만 노출) */}
+                      {isAudience && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            toggleFavorite(film.id)
+                          }}
+                          className="absolute top-3 left-3 p-2 rounded-full bg-background/80 hover:bg-background transition backdrop-blur-sm"
+                        >
+                          <Heart
+                            className={`w-5 h-5 transition ${
+                              favorited.has(film.id)
+                                ? 'fill-pink-500 text-pink-500'
+                                : 'text-foreground'
+                            }`}
+                          />
+                        </button>
+                      )}
                     </div>
 
                     {/* Film Info */}
