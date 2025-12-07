@@ -98,6 +98,22 @@ public class JdbcJudgeRepository implements JudgeRepository {
                 .optional();
     }
 
+    @Override
+    public boolean existsByFilmIdAndUserId(Long filmId, Long userId) {
+        String sql = """
+            SELECT COUNT(*) FROM judge
+            WHERE film_id = ? AND user_id = ?
+            """;
+
+        Integer count = jdbcClient.sql(sql)
+                .param(filmId)
+                .param(userId)
+                .query(Integer.class)
+                .single();
+
+        return count != null && count > 0;
+    }
+
     private Judge insert(Judge judge) {
         String sql = """
             INSERT INTO judge (film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at)
