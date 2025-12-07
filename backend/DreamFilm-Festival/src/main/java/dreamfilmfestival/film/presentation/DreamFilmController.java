@@ -46,9 +46,9 @@ public class DreamFilmController {
             throw new IllegalStateException("로그인이 필요합니다.");
         }
         
-        // 감독 역할 검증
-        if (userRole != UserRole.DIRECTOR) {
-            throw new IllegalArgumentException("영화 출품은 감독만 가능합니다.");
+        // 감독 또는 관객 역할만 출품 가능
+        if (userRole != UserRole.DIRECTOR && userRole != UserRole.AUDIENCE) {
+            throw new IllegalArgumentException("영화 출품은 감독 또는 관객만 가능합니다.");
         }
 
         // DTO -> 도메인 파라미터 변환 (Presentation Layer 책임)
