@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useAuthStore } from '@/store/auth'
+import { useToastStore } from '@/store/toast'
 
 export function CTA() {
   const [isVisible, setIsVisible] = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
+  const { user, fetched } = useAuthStore()
+  const { show } = useToastStore()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -68,11 +72,22 @@ export function CTA() {
                 ? 'opacity-100 translate-y-0' 
                 : 'opacity-0 translate-y-4'
             }`}>
-              <Link href="/submit">
-                <button className="group/btn relative px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:bg-primary/80 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
+              {fetched && !user ? (
+                <button
+                  onClick={() => {
+                    show({ message: '출품 작품을 제출하려면 로그인이 필요합니다.', kind: 'error' })
+                  }}
+                  className="group/btn relative px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:bg-primary/80 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]"
+                >
                   <span className="relative z-10">지금 출품하러 가기</span>
                 </button>
-              </Link>
+              ) : (
+                <Link href="/submit">
+                  <button className="group/btn relative px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:bg-primary/80 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
+                    <span className="relative z-10">지금 출품하러 가기</span>
+                  </button>
+                </Link>
+              )}
               <Link href="/explore">
                 <button className="group/btn2 relative px-8 py-3 border border-primary/50 text-primary rounded-lg font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:border-primary hover:bg-primary/10 hover:shadow-[0_0_20px_rgba(var(--primary),0.3)]">
                   <span className="relative z-10">작품 감상하기</span>
