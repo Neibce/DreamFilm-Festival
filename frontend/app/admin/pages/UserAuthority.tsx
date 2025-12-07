@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { User, Shield, ArrowUpDown, ArrowUp, ArrowDown, Activity, Users, MessageSquare } from "lucide-react"
+import { User, Shield, ArrowUpDown, ArrowUp, ArrowDown, Activity, Users, UserX } from "lucide-react"
 import { api } from "@/lib/api"
 import { useToastStore } from "@/store/toast"
 
@@ -31,7 +31,7 @@ export default function UserAuthority() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<Record<string, boolean>>({})
-  const [activityStats, setActivityStats] = useState({ activeUsers: 0, engagedUsers: 0, reviewOnlyUsers: 0 })
+  const [activityStats, setActivityStats] = useState({ activeUsers: 0, engagedUsers: 0, inactiveUsers: 0 })
   const { show } = useToastStore()
 
   const fetchUsers = (field: SortField, direction: SortDirection) => {
@@ -206,11 +206,11 @@ export default function UserAuthority() {
         </Card>
         <Card className="p-6 bg-card border-border">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">리뷰만 작성</p>
-            <MessageSquare className="w-5 h-5 text-orange-500" />
+            <p className="text-sm text-muted-foreground">미참여 사용자</p>
+            <UserX className="w-5 h-5 text-gray-500" />
           </div>
-          <p className="text-3xl font-bold text-orange-500">{activityStats.reviewOnlyUsers}</p>
-          <p className="text-xs text-muted-foreground mt-1">리뷰는 작성, 투표는 미참여</p>
+          <p className="text-3xl font-bold text-gray-500">{activityStats.inactiveUsers}</p>
+          <p className="text-xs text-muted-foreground mt-1">투표와 리뷰 모두 미참여</p>
         </Card>
       </div>
 

@@ -8,9 +8,8 @@ public interface UserRepository {
     Optional<User> findById(Long userId);
     Optional<User> findByEmail(String email);
     List<User> findAll(String sortField, String sortDirection);
-    void deleteById(Long userId);
     List<Long> findActiveUserIds();
     List<Long> findUsersWhoVotedAndReviewed();
-    List<Long> findUsersWhoReviewedButNotVoted();
+    List<Long> findInactiveUsers();
 }
 

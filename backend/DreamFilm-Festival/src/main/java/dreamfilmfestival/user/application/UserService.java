@@ -57,10 +57,10 @@ public class UserService {
         return userRepository.findUsersWhoVotedAndReviewed().size();
     }
 
-    // EXCEPT - 리뷰만 하고 투표 안한 사용자 수
+    // EXCEPT - 투표도 리뷰도 안 한 미참여 사용자 수
     @Transactional(readOnly = true)
-    public int getReviewOnlyUserCount() {
-        return userRepository.findUsersWhoReviewedButNotVoted().size();
+    public int getInactiveUserCount() {
+        return userRepository.findInactiveUsers().size();
     }
 }
 

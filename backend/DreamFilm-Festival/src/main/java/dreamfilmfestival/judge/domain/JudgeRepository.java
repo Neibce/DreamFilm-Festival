@@ -6,6 +6,7 @@ import java.util.Optional;
 public interface JudgeRepository {
     Judge save(Judge judge);
     List<Judge> findByFilmId(Long filmId);
+    List<Judge> findByUserId(Long userId);
     Optional<Judge> findByFilmIdAndUserId(Long filmId, Long userId);
     List<Judge> findBySubmittedFilms();
 }

@@ -232,6 +232,37 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
         jdbcClient.sql(sql).param(filmId).update();
     }
 
+    // LIKE 쿼리 - 제목으로 영화 검색
+    @Override
+    public List<DreamFilm> findByTitleContaining(String keyword) {
+        String sql = """
+            SELECT film_id, festival_id, director_id, title, dream_text,
+                   ai_script, summary, genre, created_at, status, image_url
+            FROM dream_film
+            WHERE LOWER(title) LIKE LOWER(?)
+            ORDER BY created_at DESC
+            """;
+
+        String likePattern = "%" + keyword + "%";
+        
+        return jdbcClient.sql(sql)
+                .param(likePattern)
+                .query((rs, rowNum) -> DreamFilm.builder()
+                        .filmId(rs.getLong("film_id"))
+                        .festivalId(rs.getLong("festival_id"))
+                        .directorId(rs.getLong("director_id"))
+                        .title(rs.getString("title"))
+                        .dreamText(rs.getString("dream_text"))
+                        .aiScript(rs.getString("ai_script"))
+                        .summary(rs.getString("summary"))
+                        .genre(rs.getString("genre"))
+                        .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
+                        .status(FilmStatus.valueOf(rs.getString("status")))
+                        .imageUrl(rs.getString("image_url"))
+                        .build())
+                .list();
+    }
+
     // LEFT JOIN - 영화 + 감독 정보 조회
     @Override
     public List<DreamFilmRepository.FilmWithDirector> findAllWithDirector() {

@@ -60,14 +60,14 @@ public class UserController {
     public ResponseEntity<UserActivityStats> getActivityStats() {
         int activeUsers = userService.getActiveUserCount();
         int engagedUsers = userService.getEngagedUserCount();
-        int reviewOnlyUsers = userService.getReviewOnlyUserCount();
-        return ResponseEntity.ok(new UserActivityStats(activeUsers, engagedUsers, reviewOnlyUsers));
+        int inactiveUsers = userService.getInactiveUserCount();
+        return ResponseEntity.ok(new UserActivityStats(activeUsers, engagedUsers, inactiveUsers));
     }
 
     public record UserActivityStats(
             int activeUsers,      // UNION: 투표 OR 리뷰
             int engagedUsers,     // INTERSECT: 투표 AND 리뷰
-            int reviewOnlyUsers   // EXCEPT: 리뷰만
+            int inactiveUsers     // EXCEPT: 투표도 리뷰도 안 함
     ) {}
 }
 

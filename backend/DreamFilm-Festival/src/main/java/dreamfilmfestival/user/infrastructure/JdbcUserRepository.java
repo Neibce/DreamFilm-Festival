@@ -153,12 +153,6 @@ public class JdbcUserRepository implements UserRepository {
                 .list();
     }
 
-    @Override
-    public void deleteById(Long userId) {
-        // 현재 요구사항에서 사용하지 않음 (탈퇴 기능 없음)
-        throw new UnsupportedOperationException("현재 지원하지 않는 기능입니다.");
-    }
-
     // UNION - 투표하거나 리뷰 작성한 활동 사용자 목록
     public List<Long> findActiveUserIds() {
         String sql = """
@@ -185,12 +179,12 @@ public class JdbcUserRepository implements UserRepository {
                 .list();
     }
 
-    // EXCEPT - 리뷰는 작성했지만 투표는 안한 사용자
-    public List<Long> findUsersWhoReviewedButNotVoted() {
+    // EXCEPT - 투표도 리뷰도 안 한 미참여 사용자
+    public List<Long> findInactiveUsers() {
         String sql = """
-            SELECT user_id FROM review
+            SELECT user_id FROM "user"
             EXCEPT
-            SELECT user_id FROM vote
+            (SELECT user_id FROM vote UNION SELECT user_id FROM review)
             """;
 
         return jdbcClient.sql(sql)
