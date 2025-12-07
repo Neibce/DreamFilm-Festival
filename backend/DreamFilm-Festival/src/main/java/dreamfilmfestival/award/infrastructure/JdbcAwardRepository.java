@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -20,49 +19,6 @@ public class JdbcAwardRepository implements AwardRepository {
             return insert(award);
         }
         return update(award);
-    }
-
-    @Override
-    public Optional<Award> findById(Long awardId) {
-        String sql = """
-            SELECT award_id, film_id, festival_id, rank
-            FROM award
-            WHERE award_id = ?
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(awardId)
-                .query((rs, rowNum) -> Award.builder()
-                        .awardId(rs.getLong("award_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .festivalId(rs.getLong("festival_id"))
-                        .rank((Integer) rs.getObject("rank"))
-                        .awardName(null)
-                        .announcedAt(null)
-                        .build())
-                .optional();
-    }
-
-    @Override
-    public List<Award> findByFilmId(Long filmId) {
-        String sql = """
-            SELECT award_id, film_id, festival_id, rank
-            FROM award
-            WHERE film_id = ?
-            ORDER BY award_id DESC
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(filmId)
-                .query((rs, rowNum) -> Award.builder()
-                        .awardId(rs.getLong("award_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .festivalId(rs.getLong("festival_id"))
-                        .rank((Integer) rs.getObject("rank"))
-                        .awardName(null)
-                        .announcedAt(null)
-                        .build())
-                .list();
     }
 
     @Override
@@ -85,12 +41,6 @@ public class JdbcAwardRepository implements AwardRepository {
                         .announcedAt(null)
                         .build())
                 .list();
-    }
-
-    @Override
-    public void deleteById(Long awardId) {
-        String sql = "DELETE FROM award WHERE award_id = ?";
-        jdbcClient.sql(sql).param(awardId).update();
     }
 
     @Override
@@ -140,5 +90,34 @@ public class JdbcAwardRepository implements AwardRepository {
 
         return award;
     }
-}
 
+    // SQL 레벨 트랜잭션 (BEGIN/COMMIT/ROLLBACK) - 시상 확정
+    @Override
+    public void finalizeAwardWithTransaction(Long filmId, Long festivalId, int rank) {
+        jdbcClient.sql("BEGIN").update();
+        try {
+            // 1. 시상 정보 삽입
+            jdbcClient.sql("""
+                INSERT INTO award (film_id, festival_id, rank) VALUES (?, ?, ?)
+                """)
+                .param(filmId)
+                .param(festivalId)
+                .param(rank)
+                .update();
+
+            // 2. 영화 상태를 'AWARDED'로 변경
+            jdbcClient.sql("""
+                UPDATE dream_film SET status = 'AWARDED' WHERE film_id = ?
+                """)
+                .param(filmId)
+                .update();
+
+            // 모든 작업 성공 시 커밋
+            jdbcClient.sql("COMMIT").update();
+        } catch (Exception e) {
+            // 오류 발생 시 롤백
+            jdbcClient.sql("ROLLBACK").update();
+            throw new RuntimeException("시상 확정 실패 - 트랜잭션 롤백: " + e.getMessage(), e);
+        }
+    }
+}

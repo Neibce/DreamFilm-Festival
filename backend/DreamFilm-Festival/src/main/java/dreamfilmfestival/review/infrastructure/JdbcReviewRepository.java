@@ -23,63 +23,20 @@ public class JdbcReviewRepository implements ReviewRepository {
     }
 
     @Override
-    public Optional<Review> findById(Long reviewId) {
-        String sql = """
-            SELECT review_id, film_id, user_id, rating, comment, created_at
-            FROM review
-            WHERE review_id = ?
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(reviewId)
-                .query((rs, rowNum) -> Review.builder()
-                        .reviewId(rs.getLong("review_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .rating(rs.getInt("rating"))
-                        .comment(rs.getString("comment"))
-                        .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
-                        .build())
-                .optional();
-    }
-
-    @Override
     public List<Review> findByFilmId(Long filmId, String sort) {
-        String orderBy = "created_at DESC";
+        String orderBy = " created_at DESC";
         if ("rating".equalsIgnoreCase(sort)) {
-            orderBy = "rating DESC, created_at DESC";
+            orderBy = " rating DESC, created_at DESC";
         }
 
         String sql = """
             SELECT review_id, film_id, user_id, rating, comment, created_at
             FROM review
             WHERE film_id = ?
-            ORDER BY """ + orderBy;
+            ORDER BY""" + orderBy;
 
         return jdbcClient.sql(sql)
                 .param(filmId)
-                .query((rs, rowNum) -> Review.builder()
-                        .reviewId(rs.getLong("review_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .rating(rs.getInt("rating"))
-                        .comment(rs.getString("comment"))
-                        .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
-                        .build())
-                .list();
-    }
-
-    @Override
-    public List<Review> findByUserId(Long userId) {
-        String sql = """
-            SELECT review_id, film_id, user_id, rating, comment, created_at
-            FROM review
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(userId)
                 .query((rs, rowNum) -> Review.builder()
                         .reviewId(rs.getLong("review_id"))
                         .filmId(rs.getLong("film_id"))
@@ -111,12 +68,6 @@ public class JdbcReviewRepository implements ReviewRepository {
                         .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
                         .build())
                 .optional();
-    }
-
-    @Override
-    public void deleteById(Long reviewId) {
-        String sql = "DELETE FROM review WHERE review_id = ?";
-        jdbcClient.sql(sql).param(reviewId).update();
     }
 
     private Review insert(Review review) {
@@ -167,6 +118,35 @@ public class JdbcReviewRepository implements ReviewRepository {
                 .update();
 
         return review;
+    }
+
+    // GROUP BY + HAVING + SUM/MAX/MIN - 평균 평점 N점 이상인 영화 목록
+    @Override
+    public List<ReviewRepository.FilmRatingStats> findFilmsWithMinAvgRating(double minRating) {
+        String sql = """
+            SELECT film_id, 
+                   COUNT(*) AS review_count, 
+                   AVG(rating) AS avg_rating,
+                   MAX(rating) AS max_rating,
+                   MIN(rating) AS min_rating,
+                   SUM(rating) AS rating_sum
+            FROM review
+            GROUP BY film_id
+            HAVING AVG(rating) >= ?
+            ORDER BY avg_rating DESC
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(minRating)
+                .query((rs, rowNum) -> new ReviewRepository.FilmRatingStats(
+                        rs.getLong("film_id"),
+                        rs.getInt("review_count"),
+                        rs.getDouble("avg_rating"),
+                        rs.getInt("max_rating"),
+                        rs.getInt("min_rating"),
+                        rs.getLong("rating_sum")
+                ))
+                .list();
     }
 }
 

@@ -44,5 +44,23 @@ public class UserService {
                 .build();
         return userRepository.save(updated);
     }
+
+    // UNION - 투표 OR 리뷰한 활동 사용자 수
+    @Transactional(readOnly = true)
+    public int getActiveUserCount() {
+        return userRepository.findActiveUserIds().size();
+    }
+
+    // INTERSECT - 투표 AND 리뷰 둘 다 한 사용자 수
+    @Transactional(readOnly = true)
+    public int getEngagedUserCount() {
+        return userRepository.findUsersWhoVotedAndReviewed().size();
+    }
+
+    // EXCEPT - 리뷰만 하고 투표 안한 사용자 수
+    @Transactional(readOnly = true)
+    public int getReviewOnlyUserCount() {
+        return userRepository.findUsersWhoReviewedButNotVoted().size();
+    }
 }
 

@@ -8,6 +8,8 @@ import dreamfilmfestival.film.domain.event.FilmCreatedEvent;
 import dreamfilmfestival.festival.domain.FilmFestival;
 import dreamfilmfestival.festival.domain.FilmFestivalRepository;
 import dreamfilmfestival.user.domain.User;
+import dreamfilmfestival.user.domain.UserRole;
+import dreamfilmfestival.user.application.UserService;
 import dreamfilmfestival.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,6 +26,7 @@ public class DreamFilmService {
     private final ApplicationEventPublisher eventPublisher;
     private final UserRepository userRepository;
     private final FilmFestivalRepository filmFestivalRepository;
+    private final UserService userService;
 
     @Transactional
     public DreamFilm createFilm(Long directorId, String title, String dreamText, String genre, String mood, String themes, String targetAudience) {
@@ -83,6 +86,14 @@ public class DreamFilmService {
         DreamFilm film = dreamFilmRepository.findById(filmId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 영화입니다."));
         film.approveByDirector(directorId);
+
+        // 관객이 출품을 확정하면 자동으로 감독으로 역할 변경
+        User user = userRepository.findById(directorId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+        if (user.getRole() == UserRole.AUDIENCE) {
+            userService.updateRole(directorId, UserRole.DIRECTOR);
+        }
+
         return dreamFilmRepository.save(film);
     }
 
@@ -122,6 +133,24 @@ public class DreamFilmService {
     public Optional<User> getDirector(Long directorId) {
         if (directorId == null) return Optional.empty();
         return userRepository.findById(directorId);
+    }
+
+    // LEFT JOIN - 영화 + 감독 정보 조회
+    @Transactional(readOnly = true)
+    public List<DreamFilmRepository.FilmWithDirector> getFilmsWithDirector() {
+        return dreamFilmRepository.findAllWithDirector();
+    }
+
+    // View 활용 - 영화 상세 정보 조회 (v_film_details)
+    @Transactional(readOnly = true)
+    public Optional<DreamFilmRepository.FilmDetailsView> getFilmDetailsFromView(Long filmId) {
+        return dreamFilmRepository.findFilmDetailsFromView(filmId);
+    }
+
+    // View 활용 - 영화 랭킹 조회 (v_film_ranking)
+    @Transactional(readOnly = true)
+    public List<DreamFilmRepository.FilmRankingView> getFilmRankingFromView(int limit) {
+        return dreamFilmRepository.findRankingFromView(limit);
     }
 
     private Long resolveFestivalId() {

@@ -5,13 +5,11 @@ import java.util.Optional;
 
 public interface VoteRepository {
     Vote save(Vote vote);
-    Optional<Vote> findById(Long voteId);
-    List<Vote> findByFilmId(Long filmId);
     List<Vote> findByUserId(Long userId);
     Optional<Vote> findByUserIdAndFilmId(Long userId, Long filmId);
     int countByFilmId(Long filmId);
     int countByUserId(Long userId);
-    void deleteById(Long voteId);
     void deleteByUserIdAndFilmId(Long userId, Long filmId);
+    // EXISTS Subquery
+    boolean existsByUserAndFilm(Long userId, Long filmId);
 }
-

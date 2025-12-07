@@ -24,30 +24,6 @@ public class JdbcJudgeRepository implements JudgeRepository {
     }
 
     @Override
-    public Optional<Judge> findById(Long judgeId) {
-        String sql = """
-            SELECT judge_id, film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at
-            FROM judge
-            WHERE judge_id = ?
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(judgeId)
-                .query((rs, rowNum) -> Judge.builder()
-                        .judgeId(rs.getLong("judge_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .creativity(getNullableInt(rs, "creativity"))
-                        .execution(getNullableInt(rs, "execution"))
-                        .emotionalImpact(getNullableInt(rs, "emotional_impact"))
-                        .storytelling(getNullableInt(rs, "storytelling"))
-                        .comment(rs.getString("comment"))
-                        .judgedAt(rs.getTimestamp("judged_at").toLocalDateTime())
-                        .build())
-                .optional();
-    }
-
-    @Override
     public List<Judge> findByFilmId(Long filmId) {
         String sql = """
             SELECT judge_id, film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at
@@ -58,54 +34,6 @@ public class JdbcJudgeRepository implements JudgeRepository {
 
         return jdbcClient.sql(sql)
                 .param(filmId)
-                .query((rs, rowNum) -> Judge.builder()
-                        .judgeId(rs.getLong("judge_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .creativity(getNullableInt(rs, "creativity"))
-                        .execution(getNullableInt(rs, "execution"))
-                        .emotionalImpact(getNullableInt(rs, "emotional_impact"))
-                        .storytelling(getNullableInt(rs, "storytelling"))
-                        .comment(rs.getString("comment"))
-                        .judgedAt(rs.getTimestamp("judged_at").toLocalDateTime())
-                        .build())
-                .list();
-    }
-
-    @Override
-    public List<Judge> findByUserId(Long userId) {
-        String sql = """
-            SELECT judge_id, film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at
-            FROM judge
-            WHERE user_id = ?
-            ORDER BY judged_at DESC
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(userId)
-                .query((rs, rowNum) -> Judge.builder()
-                        .judgeId(rs.getLong("judge_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .creativity(getNullableInt(rs, "creativity"))
-                        .execution(getNullableInt(rs, "execution"))
-                        .emotionalImpact(getNullableInt(rs, "emotional_impact"))
-                        .storytelling(getNullableInt(rs, "storytelling"))
-                        .comment(rs.getString("comment"))
-                        .judgedAt(rs.getTimestamp("judged_at").toLocalDateTime())
-                        .build())
-                .list();
-    }
-
-    @Override
-    public List<Judge> findAll() {
-        String sql = """
-            SELECT judge_id, film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at
-            FROM judge
-            ORDER BY judge_id DESC
-            """;
-
-        return jdbcClient.sql(sql)
                 .query((rs, rowNum) -> Judge.builder()
                         .judgeId(rs.getLong("judge_id"))
                         .filmId(rs.getLong("film_id"))
@@ -143,12 +71,6 @@ public class JdbcJudgeRepository implements JudgeRepository {
                         .judgedAt(rs.getTimestamp("judged_at").toLocalDateTime())
                         .build())
                 .optional();
-    }
-
-    @Override
-    public void deleteById(Long judgeId) {
-        String sql = "DELETE FROM judge WHERE judge_id = ?";
-        jdbcClient.sql(sql).param(judgeId).update();
     }
 
     private Judge insert(Judge judge) {
@@ -216,6 +138,33 @@ public class JdbcJudgeRepository implements JudgeRepository {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // IN Subquery - 제출된 영화의 심사만 조회
+    public List<Judge> findBySubmittedFilms() {
+        String sql = """
+            SELECT judge_id, film_id, user_id, creativity, execution, 
+                   emotional_impact, storytelling, comment, judged_at
+            FROM judge
+            WHERE film_id IN (
+                SELECT film_id FROM dream_film WHERE status = 'SUBMITTED'
+            )
+            ORDER BY judged_at DESC
+            """;
+
+        return jdbcClient.sql(sql)
+                .query((rs, rowNum) -> Judge.builder()
+                        .judgeId(rs.getLong("judge_id"))
+                        .filmId(rs.getLong("film_id"))
+                        .userId(rs.getLong("user_id"))
+                        .creativity(getNullableInt(rs, "creativity"))
+                        .execution(getNullableInt(rs, "execution"))
+                        .emotionalImpact(getNullableInt(rs, "emotional_impact"))
+                        .storytelling(getNullableInt(rs, "storytelling"))
+                        .comment(rs.getString("comment"))
+                        .judgedAt(rs.getTimestamp("judged_at").toLocalDateTime())
+                        .build())
+                .list();
     }
 }
 

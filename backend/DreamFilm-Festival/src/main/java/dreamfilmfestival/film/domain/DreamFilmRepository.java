@@ -11,5 +11,28 @@ public interface DreamFilmRepository {
     List<DreamFilm> findByDirectorId(Long directorId);
     List<DreamFilm> findByStatus(FilmStatus status);
     void deleteById(Long filmId);
+
+    // LEFT JOIN - 영화 + 감독 정보 조회
+    List<FilmWithDirector> findAllWithDirector();
+
+    // View 활용 - 영화 상세 정보 조회 (v_film_details)
+    Optional<FilmDetailsView> findFilmDetailsFromView(Long filmId);
+
+    // View 활용 - 영화 랭킹 조회 (v_film_ranking)
+    List<FilmRankingView> findRankingFromView(int limit);
+
+    record FilmWithDirector(
+            Long filmId, String title, String genre, String status, String imageUrl,
+            java.time.LocalDateTime createdAt, String directorName, String directorEmail
+    ) {}
+
+    record FilmDetailsView(
+            Long filmId, String title, String genre, String status, String imageUrl,
+            String directorName, int voteCount, double avgRating
+    ) {}
+
+    record FilmRankingView(
+            Long filmId, String title, String genre, double judgeScore, int voteCount
+    ) {}
 }
 

@@ -55,5 +55,19 @@ public class UserController {
         User updated = userService.updateRole(userId, request.role());
         return ResponseEntity.ok(UserSummaryResponse.from(updated));
     }
+
+    @GetMapping("/stats/activity")
+    public ResponseEntity<UserActivityStats> getActivityStats() {
+        int activeUsers = userService.getActiveUserCount();
+        int engagedUsers = userService.getEngagedUserCount();
+        int reviewOnlyUsers = userService.getReviewOnlyUserCount();
+        return ResponseEntity.ok(new UserActivityStats(activeUsers, engagedUsers, reviewOnlyUsers));
+    }
+
+    public record UserActivityStats(
+            int activeUsers,      // UNION: 투표 OR 리뷰
+            int engagedUsers,     // INTERSECT: 투표 AND 리뷰
+            int reviewOnlyUsers   // EXCEPT: 리뷰만
+    ) {}
 }
 

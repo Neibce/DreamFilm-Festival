@@ -158,5 +158,44 @@ public class JdbcUserRepository implements UserRepository {
         // 현재 요구사항에서 사용하지 않음 (탈퇴 기능 없음)
         throw new UnsupportedOperationException("현재 지원하지 않는 기능입니다.");
     }
+
+    // UNION - 투표하거나 리뷰 작성한 활동 사용자 목록
+    public List<Long> findActiveUserIds() {
+        String sql = """
+            SELECT user_id FROM vote
+            UNION
+            SELECT user_id FROM review
+            """;
+
+        return jdbcClient.sql(sql)
+                .query(Long.class)
+                .list();
+    }
+
+    // INTERSECT - 투표도 하고 리뷰도 작성한 사용자
+    public List<Long> findUsersWhoVotedAndReviewed() {
+        String sql = """
+            SELECT user_id FROM vote
+            INTERSECT
+            SELECT user_id FROM review
+            """;
+
+        return jdbcClient.sql(sql)
+                .query(Long.class)
+                .list();
+    }
+
+    // EXCEPT - 리뷰는 작성했지만 투표는 안한 사용자
+    public List<Long> findUsersWhoReviewedButNotVoted() {
+        String sql = """
+            SELECT user_id FROM review
+            EXCEPT
+            SELECT user_id FROM vote
+            """;
+
+        return jdbcClient.sql(sql)
+                .query(Long.class)
+                .list();
+    }
 }
 

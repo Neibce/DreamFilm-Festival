@@ -231,5 +231,77 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
         String sql = "DELETE FROM dream_film WHERE film_id = ?";
         jdbcClient.sql(sql).param(filmId).update();
     }
+
+    // LEFT JOIN - 영화 + 감독 정보 조회
+    @Override
+    public List<DreamFilmRepository.FilmWithDirector> findAllWithDirector() {
+        String sql = """
+            SELECT f.film_id, f.title, f.genre, f.status, f.image_url, f.created_at,
+                   u.username AS director_name, u.email AS director_email
+            FROM dream_film f
+            LEFT JOIN "user" u ON f.director_id = u.user_id
+            WHERE f.status = 'SUBMITTED'
+            ORDER BY f.created_at DESC
+            """;
+
+        return jdbcClient.sql(sql)
+                .query((rs, rowNum) -> new DreamFilmRepository.FilmWithDirector(
+                        rs.getLong("film_id"),
+                        rs.getString("title"),
+                        rs.getString("genre"),
+                        rs.getString("status"),
+                        rs.getString("image_url"),
+                        rs.getTimestamp("created_at").toLocalDateTime(),
+                        rs.getString("director_name"),
+                        rs.getString("director_email")
+                ))
+                .list();
+    }
+
+    // View 활용 - 영화 상세 정보 조회 (v_film_details)
+    @Override
+    public Optional<DreamFilmRepository.FilmDetailsView> findFilmDetailsFromView(Long filmId) {
+        String sql = """
+            SELECT film_id, title, genre, status, image_url, director_name,
+                   vote_count, avg_rating
+            FROM v_film_details
+            WHERE film_id = ?
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(filmId)
+                .query((rs, rowNum) -> new DreamFilmRepository.FilmDetailsView(
+                        rs.getLong("film_id"),
+                        rs.getString("title"),
+                        rs.getString("genre"),
+                        rs.getString("status"),
+                        rs.getString("image_url"),
+                        rs.getString("director_name"),
+                        rs.getInt("vote_count"),
+                        rs.getDouble("avg_rating")
+                ))
+                .optional();
+    }
+
+    // View 활용 - 영화 랭킹 조회 (v_film_ranking)
+    @Override
+    public List<DreamFilmRepository.FilmRankingView> findRankingFromView(int limit) {
+        String sql = """
+            SELECT film_id, title, genre, judge_score, vote_count
+            FROM v_film_ranking
+            LIMIT ?
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(limit)
+                .query((rs, rowNum) -> new DreamFilmRepository.FilmRankingView(
+                        rs.getLong("film_id"),
+                        rs.getString("title"),
+                        rs.getString("genre"),
+                        rs.getDouble("judge_score"),
+                        rs.getInt("vote_count")
+                ))
+                .list();
+    }
 }
 
