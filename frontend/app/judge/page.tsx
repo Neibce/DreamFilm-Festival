@@ -65,10 +65,7 @@ export default function JudgePage() {
   const [submitting, setSubmitting] = useState(false)
   const { show } = useToastStore()
   const { authorized, checking } = useRoleGuard('JUDGE')
-
-  // 권한 확인 전까지 UI/데이터 호출을 막아 조용히 처리
-  if (checking) return null
-  if (!authorized) return null
+  const isAccessPending = checking || !authorized
 
   useEffect(() => {
     if (!authorized) return
@@ -286,6 +283,9 @@ export default function JudgePage() {
     ? (selectedFilm.scores.creativity + selectedFilm.scores.execution + selectedFilm.scores.emotional_impact + selectedFilm.scores.storytelling) / 4 
     : 0
   const isListLoading = loading && films.length === 0
+
+  // 권한 확인 전까지는 렌더를 건너뛰되, 훅 호출 순서는 유지
+  if (isAccessPending) return null
 
   return (
     <main className="min-h-screen bg-background">
