@@ -68,7 +68,7 @@ export default function LoginPage() {
           role: res.role
         })
         show({ message: '로그인되었습니다!', kind: 'success' })
-        router.push('/explore')
+        router.push('/')
       })
       .catch((err: Error) => {
         show({ message: err.message || '로그인에 실패했습니다.', kind: 'error' })
