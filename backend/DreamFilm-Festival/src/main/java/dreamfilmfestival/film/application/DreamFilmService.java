@@ -11,6 +11,8 @@ import dreamfilmfestival.user.domain.User;
 import dreamfilmfestival.user.domain.UserRole;
 import dreamfilmfestival.user.application.UserService;
 import dreamfilmfestival.user.domain.UserRepository;
+import dreamfilmfestival.user.domain.UserRole;
+import dreamfilmfestival.user.application.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -86,14 +88,14 @@ public class DreamFilmService {
         DreamFilm film = dreamFilmRepository.findById(filmId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 영화입니다."));
         film.approveByDirector(directorId);
-
+        
         // 관객이 출품을 확정하면 자동으로 감독으로 역할 변경
         User user = userRepository.findById(directorId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
         if (user.getRole() == UserRole.AUDIENCE) {
             userService.updateRole(directorId, UserRole.DIRECTOR);
         }
-
+        
         return dreamFilmRepository.save(film);
     }
 

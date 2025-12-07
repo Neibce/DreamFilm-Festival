@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Clock, User } from "lucide-react"
@@ -17,29 +17,72 @@ type JudgeProgress = {
     completionRate: number
 }
 
+type JudgeProgressEventDetail = {
+    userId: string | number
+    role: string
+    name?: string
+    email?: string
+}
+
+type UserItem = {
+    userId: string | number
+    username?: string
+    email?: string
+    role?: string
+}
+
 export default function JudgeProgress() {
     const { show } = useToastStore()
     const [judges, setJudges] = useState<JudgeProgress[]>([])
     const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
+    const fetchProgress = useCallback(() => {
         setLoading(true)
-        api.getJudgesProgress()
-            .then((res: any) => {
-                if (!Array.isArray(res)) {
-                    setJudges([])
-                    return
-                }
-                const mapped = res.map((item: any) => ({
-                    userId: item.userId,
+        Promise.all([api.getJudgesProgress(), api.getUsers()])
+            .then(([progressRes, usersRes]) => {
+                const progressList: JudgeProgress[] = Array.isArray(progressRes) ? progressRes.map((item: any) => ({
+                    userId: Number(item.userId),
                     username: item.username,
                     email: item.email,
                     totalFilms: item.totalFilms ?? 0,
                     reviewedFilms: item.reviewedFilms ?? 0,
                     pendingFilms: item.pendingFilms ?? 0,
                     completionRate: item.completionRate ?? 0,
-                })) as JudgeProgress[]
-                setJudges(mapped)
+                })) : []
+
+                const judgeUsers: UserItem[] = Array.isArray(usersRes)
+                    ? (usersRes as any[]).filter(u => u.role === 'JUDGE').map(u => ({
+                        userId: Number(u.userId),
+                        username: u.username,
+                        email: u.email,
+                        role: u.role,
+                    }))
+                    : []
+
+                const merged = new Map<number, JudgeProgress>()
+                progressList.forEach(j => merged.set(j.userId, j))
+                judgeUsers.forEach(u => {
+                    const existing = merged.get(u.userId)
+                    if (existing) {
+                        merged.set(u.userId, {
+                            ...existing,
+                            username: existing.username || u.username,
+                            email: existing.email || u.email,
+                        })
+                    } else {
+                        merged.set(u.userId, {
+                            userId: Number(u.userId),
+                            username: u.username,
+                            email: u.email,
+                            totalFilms: 0,
+                            reviewedFilms: 0,
+                            pendingFilms: 0,
+                            completionRate: 0,
+                        })
+                    }
+                })
+
+                setJudges(Array.from(merged.values()))
             })
             .catch((err: Error) => {
                 show({ message: err.message || '심사 진행률을 불러오지 못했습니다.', kind: 'error' })
@@ -47,6 +90,41 @@ export default function JudgeProgress() {
             })
             .finally(() => setLoading(false))
     }, [show])
+
+    useEffect(() => {
+        fetchProgress()
+
+        if (typeof window === 'undefined') return
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent<JudgeProgressEventDetail>).detail
+            if (detail?.userId) {
+                const userIdNumber = Number(detail.userId)
+                setJudges((prev) => {
+                    const existing = prev.find(j => j.userId === userIdNumber)
+                    if (detail.role !== 'JUDGE') {
+                        return existing ? prev.filter(j => j.userId !== userIdNumber) : prev
+                    }
+                    if (existing) {
+                        return prev.map(j => j.userId === userIdNumber
+                            ? { ...j, username: detail.name ?? j.username, email: detail.email ?? j.email }
+                            : j)
+                    }
+                    return [...prev, {
+                        userId: userIdNumber,
+                        username: detail.name,
+                        email: detail.email,
+                        totalFilms: 0,
+                        reviewedFilms: 0,
+                        pendingFilms: 0,
+                        completionRate: 0,
+                    }]
+                })
+            }
+            fetchProgress()
+        }
+        window.addEventListener('judge-progress-updated', handler)
+        return () => window.removeEventListener('judge-progress-updated', handler)
+    }, [fetchProgress])
 
     const averageCompletion = useMemo(() => {
         if (judges.length === 0) return 0
