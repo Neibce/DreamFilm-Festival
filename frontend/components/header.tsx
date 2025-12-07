@@ -16,7 +16,8 @@ export function Header() {
 
   useEffect(() => {
     fetchMeOnce()
-  }, [fetchMeOnce])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleLogout = () => {
     api.logout()
@@ -60,6 +61,7 @@ export function Header() {
     // 기본: 관객
     return [
       { href: '/explore', label: '상영작 목록' },
+      { href: '/submit', label: '출품작 제출' },
       { href: '/awards', label: '수상작' },
     ]
   }, [normalizedRole, directorProfileHref])
@@ -79,15 +81,30 @@ export function Header() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-10">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-muted-foreground hover:text-foreground transition"
-                >
-                  {item.label}
-              </Link>
-              ))}
+              {navItems.map((item) => {
+                if (item.href === '/submit' && fetched && !user) {
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => {
+                        show({ message: '출품 작품을 제출하려면 로그인이 필요합니다.', kind: 'error' })
+                      }}
+                      className="text-muted-foreground hover:text-foreground transition cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  )
+                }
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="text-muted-foreground hover:text-foreground transition"
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
             </div>
 
             {/* CTA Buttons */}
@@ -142,15 +159,31 @@ export function Header() {
           {/* Mobile Navigation */}
           {isOpen && (
               <div className="md:hidden pb-4 space-y-3">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="block text-muted-foreground hover:text-foreground transition py-2"
-                  >
-                    {item.label}
-                </Link>
-                ))}
+                {navItems.map((item) => {
+                  if (item.href === '/submit' && fetched && !user) {
+                    return (
+                      <button
+                        key={item.href}
+                        onClick={() => {
+                          show({ message: '출품 작품을 제출하려면 로그인이 필요합니다.', kind: 'error' })
+                          setIsOpen(false)
+                        }}
+                        className="block text-muted-foreground hover:text-foreground transition py-2 w-full text-left cursor-pointer"
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  }
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="block text-muted-foreground hover:text-foreground transition py-2"
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
             <div className="flex gap-3 pt-2">
               {!fetched ? null : user ? (
                 <div className="flex items-center gap-2 w-full">

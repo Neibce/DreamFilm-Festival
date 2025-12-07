@@ -13,6 +13,7 @@ import { Wand2, CheckCircle, Loader2 } from 'lucide-react'
 import { api, resolveImageUrl } from '@/lib/api'
 import { useToastStore } from '@/store/toast'
 import { useRoleGuard } from '@/hooks/useRoleGuard'
+import { useAuthStore } from '@/store/auth'
 
 export default function SubmitPage() {
   const [step, setStep] = useState<'dream' | 'waiting' | 'check' | 'success'>('dream')
@@ -32,11 +33,9 @@ export default function SubmitPage() {
     email: '',
   })
   const { show } = useToastStore()
-  const { authorized, checking } = useRoleGuard('DIRECTOR')
-
-  // 권한 확인 전까지는 조용히 대기
-  if (checking) return null
-  if (!authorized) return null
+  const { authorized, checking } = useRoleGuard(['DIRECTOR', 'AUDIENCE'])
+  const { fetchMeOnce } = useAuthStore()
+  const isAccessPending = checking || !authorized
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -163,6 +162,8 @@ export default function SubmitPage() {
     if (initializing || !createdFilmId) return
     try {
       await api.approveFilmUser(createdFilmId)
+      // 역할이 변경되었을 수 있으므로 사용자 정보 갱신
+      await fetchMeOnce()
       show({ message: '출품을 확정했습니다.', kind: 'success' })
       setStep('success')
     } catch (e: any) {
@@ -182,6 +183,9 @@ export default function SubmitPage() {
       show({ message: e?.message || '다시하기에 실패했습니다.', kind: 'error' })
     }
   }
+
+  // 권한 확인 전까지는 렌더를 건너뛰되, 훅 호출 순서는 유지
+  if (isAccessPending) return null
 
   return (
     <main className="min-h-screen bg-background">

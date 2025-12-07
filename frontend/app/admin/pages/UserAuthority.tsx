@@ -67,11 +67,15 @@ export default function UserAuthority() {
   const handleSaveRole = (userId: string) => {
     const role = selectedRoles[userId]
     if (!role) return
+    const targetUser = users.find(u => u.id === userId)
     setSaving(prev => ({ ...prev, [userId]: true }))
     api.updateUserRole(userId, { role })
       .then(() => {
         setUsers(prev => prev.map(user => user.id === userId ? { ...user, role } : user))
         show({ message: '역할이 업데이트되었습니다.', kind: 'success' })
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('judge-progress-updated', { detail: { userId, role, name: targetUser?.name, email: targetUser?.email } }))
+        }
       })
       .catch((err: Error) => {
         show({ message: err.message || '역할 변경에 실패했습니다.', kind: 'error' })
