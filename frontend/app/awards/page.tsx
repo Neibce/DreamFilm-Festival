@@ -47,6 +47,7 @@ export default function AwardsPage() {
     const [festivalsLoading, setFestivalsLoading] = useState(true)
     const [selectedFestivalId, setSelectedFestivalId] = useState<string | null>(null)
     const [unfinalized, setUnfinalized] = useState(false)
+    const [viewRanking, setViewRanking] = useState<any[]>([])
 
     // 영화제 목록 로드
     useEffect(() => {
@@ -79,6 +80,17 @@ export default function AwardsPage() {
             })
             .finally(() => {
                 if (mounted) setFestivalsLoading(false)
+            })
+
+        // View 기반 랭킹 조회 (v_film_ranking View 사용)
+        api.getFilmRanking(10)
+            .then((ranking: any) => {
+                if (!mounted) return
+                setViewRanking(Array.isArray(ranking) ? ranking : [])
+            })
+            .catch(() => {
+                if (!mounted) return
+                setViewRanking([])
             })
 
         return () => { mounted = false }

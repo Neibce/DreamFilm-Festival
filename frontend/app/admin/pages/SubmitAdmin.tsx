@@ -15,6 +15,7 @@ interface Submission {
     genre: string
     status: "pending" | "approved" | "rejected"
     dreamConcept: string
+    aiScript?: string
     poster?: string
 }
 
@@ -43,6 +44,7 @@ export default function SubmitAdmin() {
                         : f.status === 'REJECTED' ? 'rejected'
                         : 'pending',
                     dreamConcept: f.dreamText || f.summary || '내용 없음',
+                    aiScript: f.aiScript || '',
                     poster: resolveImageUrl(f.imageUrl) || '/placeholder.svg',
                 }))
                 setSubmissions(mapped)
@@ -279,6 +281,18 @@ export default function SubmitAdmin() {
                                 <div>
                                     <p className="text-sm text-muted-foreground mb-2 uppercase font-semibold">Dream Concept</p>
                                     <p className="text-foreground leading-relaxed">{selectedFilm.dreamConcept}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm text-muted-foreground uppercase font-semibold">AI 시나리오</p>
+                                    <div className="text-foreground leading-relaxed whitespace-pre-wrap space-y-3">
+                                        {selectedFilm.aiScript && selectedFilm.aiScript.trim().length > 0 ? (
+                                            selectedFilm.aiScript.split('\n\n').map((paragraph, idx) => (
+                                                <p key={idx}>{paragraph}</p>
+                                            ))
+                                        ) : (
+                                            <p className="text-muted-foreground">AI 시나리오 정보가 없습니다.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </Card>

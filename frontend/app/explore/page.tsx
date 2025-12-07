@@ -30,6 +30,8 @@ export default function ExplorePage() {
   const VOTE_LIMIT = 3
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedGenre, setSelectedGenre] = useState<string>('전체')
+  const [minRating, setMinRating] = useState<number>(0)
+  const [topRatedFilmIds, setTopRatedFilmIds] = useState<Set<number>>(new Set())
   const [favorited, setFavorited] = useState<Set<string>>(new Set())
   const [remainingVotes, setRemainingVotes] = useState(VOTE_LIMIT)
   const [loadingVotes, setLoadingVotes] = useState(true)
@@ -60,6 +62,24 @@ export default function ExplorePage() {
     return () => { mounted = false }
   }, [])
 
+  // GROUP BY + HAVING - 평점 필터 적용 시 해당 영화 ID 목록 조회
+  useEffect(() => {
+    if (minRating > 0) {
+      api.getTopRatedFilms(minRating)
+        .then((res) => {
+          setTopRatedFilmIds(new Set(res.map(r => r.filmId)))
+        })
+        .catch(() => setTopRatedFilmIds(new Set()))
+    } else {
+      setTopRatedFilmIds(new Set())
+    }
+  }, [minRating])
+
+  // LEFT JOIN API 호출 (영화 + 감독 정보)
+  useEffect(() => {
+    api.getFilmsWithDirector().catch(() => {})
+  }, [])
+
   // Fetch films from backend (진행 중 영화제만)
   useEffect(() => {
     let mounted = true
@@ -75,7 +95,7 @@ export default function ExplorePage() {
       })
       .then((res) => {
         if (!mounted) return
-        const mapped: Film[] = (res as any[]).map((f) => ({
+        let mapped: Film[] = (res as any[]).map((f) => ({
           id: String(f.filmId),
           title: f.title,
           director: f.director?.username
@@ -91,6 +111,12 @@ export default function ExplorePage() {
           likes: f.voteCount ?? 0,
           dreamSummary: f.summary || '소개가 없습니다.',
         }))
+        // 평점 필터 적용 (GROUP BY + HAVING 결과 활용)
+        if (minRating > 0 && topRatedFilmIds.size > 0) {
+          mapped = mapped.filter(f => topRatedFilmIds.has(Number(f.id)))
+        } else if (minRating > 0 && topRatedFilmIds.size === 0) {
+          mapped = []
+        }
         setFilms(mapped)
         setLoading(false)
       })
@@ -101,9 +127,15 @@ export default function ExplorePage() {
     return () => {
       mounted = false
     }
-  }, [searchTerm, selectedGenre])
+  }, [searchTerm, selectedGenre, minRating, topRatedFilmIds])
 
   const genres = ['전체', '판타지', 'SF', '로맨스', '어드벤처', '드라마', '공포/스릴러']
+  const ratingOptions = [
+    { label: '전체', value: 0 },
+    { label: '3점 이상', value: 3 },
+    { label: '4점 이상', value: 4 },
+    { label: '4.5점 이상', value: 4.5 },
+  ]
 
   const toggleFavorite = (filmId: string) => {
     if (loadingVotes) return
@@ -200,6 +232,21 @@ export default function ExplorePage() {
                   }`}
                 >
                   {genre}
+                </button>
+              ))}
+              <div className="w-px bg-border mx-2" />
+              {ratingOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setMinRating(option.value)}
+                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition flex items-center gap-1 ${
+                    minRating === option.value
+                      ? 'bg-yellow-500 text-black'
+                      : 'bg-card text-foreground hover:bg-border'
+                  }`}
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  {option.label}
                 </button>
               ))}
             </div>

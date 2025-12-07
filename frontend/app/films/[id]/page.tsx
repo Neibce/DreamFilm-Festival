@@ -44,6 +44,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [submittingReview, setSubmittingReview] = useState(false)
   const [relatedFilms, setRelatedFilms] = useState<RelatedFilmItem[]>([])
+  const [viewStats, setViewStats] = useState<{ voteCount: number; avgRating: number } | null>(null)
 
   const [isWriteDialogOpen, setIsWriteDialogOpen] = useState(false)
   const [newRating, setNewRating] = useState(0)
@@ -109,6 +110,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
           dreamTheme: f.summary || '',
           releaseDate: '',
           runtime: '',
+          aiScript: f.aiScript || '',
           description: f.dreamText || '',
           cinematography: 'Gemini',
           awards: ''
@@ -140,6 +142,17 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
       .catch(() => {
         if (!mounted) return
         setReviews([])
+      })
+
+    // View API 호출 (v_film_details View 사용)
+    api.getFilmDetailsFromView(id)
+      .then((v: any) => {
+        if (!mounted || !v) return
+        setViewStats({ voteCount: v.voteCount ?? 0, avgRating: v.avgRating ?? 0 })
+      })
+      .catch(() => {
+        if (!mounted) return
+        setViewStats(null)
       })
 
     return () => { mounted = false }
@@ -438,6 +451,8 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
     )
   }
 
+  const scenarioText = filmData.aiScript?.trim() || ''
+
   return (
     <main className="min-h-screen bg-background">
       <Header />
@@ -481,7 +496,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
               <Card className="p-6 bg-card border-border">
                 <h2 className="text-2xl font-bold text-foreground mb-3">시나리오</h2>
                 <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {filmData.description}
+                  {scenarioText}
                 </p>
               </Card>
 
