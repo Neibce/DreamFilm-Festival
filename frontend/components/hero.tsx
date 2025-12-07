@@ -1,7 +1,12 @@
 'use client'
 import Link from 'next/link'
+import { useAuthStore } from '@/store/auth'
+import { useToastStore } from '@/store/toast'
 
 export function Hero() {
+  const { user, fetched } = useAuthStore()
+  const { show } = useToastStore()
+
   return (
     <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Gradient background */}
@@ -26,11 +31,22 @@ export function Hero() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link href="/submit">
-                <button className="px-11 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition">
+              {fetched && !user ? (
+                <button
+                  onClick={() => {
+                    show({ message: '출품 작품을 제출하려면 로그인이 필요합니다.', kind: 'error' })
+                  }}
+                  className="px-11 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition"
+                >
                   꿈 출품하기
                 </button>
-              </Link>
+              ) : (
+                <Link href="/submit">
+                  <button className="px-11 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition">
+                    꿈 출품하기
+                  </button>
+                </Link>
+              )}
               <Link href="/explore">
                 <button className="px-10 py-3 border border-primary/50 text-primary rounded-lg font-semibold hover:bg-primary/5 transition">
                   작품 감상하기

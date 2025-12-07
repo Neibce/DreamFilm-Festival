@@ -107,6 +107,22 @@ export default function AwardsPage() {
         setWinners([])
         setPopularityWinner(null)
 
+        // 영화제 기간이 끝났는지 확인
+        if (selected?.endDate) {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const endDate = new Date(selected.endDate)
+            endDate.setHours(0, 0, 0, 0)
+            const isEnded = today >= endDate
+
+            if (!isEnded) {
+                // 영화제 기간이 끝나지 않았으면 수상작을 보여주지 않음
+                setLoading(false)
+                setUnfinalized(true)
+                return
+            }
+        }
+
         let mounted = true
         const fetchAwards = async () => {
             try {
@@ -179,6 +195,16 @@ export default function AwardsPage() {
         if (!festival) return 'Dream Film Festival'
         const name = festival.name?.includes('Dream Film Festival') ? festival.name : `${festival.name} Dream Film Festival`
         return name
+    }, [festival])
+
+    // 영화제 기간이 끝났는지 확인
+    const isFestivalEnded = useMemo(() => {
+        if (!festival?.endDate) return false
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const endDate = new Date(festival.endDate)
+        endDate.setHours(0, 0, 0, 0)
+        return today >= endDate
     }, [festival])
 
     const getRankIcon = (rank: number) => {
@@ -390,17 +416,33 @@ export default function AwardsPage() {
                 <section className="py-16 px-4 md:px-6 lg:px-8">
                     <div className="max-w-3xl mx-auto text-center space-y-4">
                         <Card className="p-8 bg-card border-border">
-                            <h3 className="text-2xl font-bold text-foreground mb-2">수상작이 아직 확정되지 않았습니다.</h3>
-                            <p className="text-muted-foreground">
-                                영화제 운영 측에서 수상작을 확정하면 이 페이지에 발표됩니다.
-                            </p>
+                            {festival && !isFestivalEnded ? (
+                                <>
+                                    <h3 className="text-2xl font-bold text-foreground mb-2">영화제가 아직 진행 중입니다.</h3>
+                                    <p className="text-muted-foreground">
+                                        영화제 기간이 끝나거나 관리자가 수상작을 확정한 후에 수상작이 발표됩니다.
+                                    </p>
+                                    {festival.endDate && (
+                                        <p className="text-sm text-muted-foreground mt-4">
+                                            영화제 종료일: {new Date(festival.endDate).toLocaleDateString('ko-KR')}
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <h3 className="text-2xl font-bold text-foreground mb-2">수상작이 아직 확정되지 않았습니다.</h3>
+                                    <p className="text-muted-foreground">
+                                        영화제 운영 측에서 수상작을 확정하면 이 페이지에 발표됩니다.
+                                    </p>
+                                </>
+                            )}
                         </Card>
                     </div>
                 </section>
             )}
 
             {/* Grand Prize Winner */}
-            {topWinner && (
+            {topWinner && isFestivalEnded && (
             <section className="py-12 px-4 md:px-6 lg:px-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-8">
@@ -482,7 +524,7 @@ export default function AwardsPage() {
             )}
 
             {/* Other Winners */}
-            {otherWinners.length > 0 && (
+            {otherWinners.length > 0 && isFestivalEnded && (
             <section className="py-12 px-4 md:px-6 lg:px-8 bg-muted/20">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -567,7 +609,7 @@ export default function AwardsPage() {
             )}
 
             {/* Popularity Award Section */}
-            {popularityWinner && (
+            {popularityWinner && isFestivalEnded && (
                 <section className="py-12 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-pink-500/5 to-background">
                     <div className="max-w-7xl mx-auto">
                         <div className="text-center mb-8">
@@ -635,7 +677,7 @@ export default function AwardsPage() {
             )}
 
             {/* Festival Info */}
-            {topWinner && (
+            {topWinner && isFestivalEnded && (
                 <section className="py-12 px-4 md:px-6 lg:px-8 border-t border-border">
                     <div className="max-w-3xl mx-auto text-center space-y-4">
                         <h3 className="text-2xl font-bold text-foreground">
