@@ -226,15 +226,16 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
   const sortedReviews = reviews
 
-  const isAudience = (currentUser?.role || '').toUpperCase() === 'AUDIENCE'
-
-  const myReview = useMemo(() => {
+  const myReview = useMemo<Review | null>(() => {
     if (!currentUser) return null
     return reviews.find((r) =>
       (currentUser.id && r.userId === String(currentUser.id)) ||
       (currentUser.username && r.author === currentUser.username)
     ) || null
   }, [reviews, currentUser])
+
+  const isAudience = (currentUser?.role || '').toUpperCase() === 'AUDIENCE'
+  const canWriteReview = isAudience && !myReview
 
   const toggleLike = () => {
     if (!filmData || loadingVotes || !isAudience) return
@@ -298,6 +299,10 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
   }
 
   const handleSubmitReview = () => {
+    if (myReview) {
+      show({ message: '이미 작성한 리뷰는 수정할 수 없습니다.', kind: 'error' })
+      return
+    }
     if (newRating === 0) {
       show({ message: '평점을 선택해주세요!', kind: 'error' })
       return
@@ -314,8 +319,8 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
     api.postReview({ filmId: filmData.id, rating: newRating, comment: hasReviewText ? newReviewText : '' })
       .then((res: any) => {
-        const createdAt = res?.createdAt ?? (myReview ? myReview.date : new Date().toISOString())
-        const reviewId = myReview?.id ?? res?.reviewId ?? Date.now()
+        const createdAt = res?.createdAt ?? new Date().toISOString()
+        const reviewId = res?.reviewId ?? Date.now()
         const author = currentUser?.username
           ?? res?.username
           ?? `사용자 #${res?.userId ?? '익명'}`
@@ -328,31 +333,20 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
           rating: newRating,
           text: hasReviewText ? newReviewText : '',
           date: String(createdAt).slice(0, 10),
-          helpful: myReview?.helpful ?? 0
+          helpful: 0
         }
 
-        setReviews(prev => {
-          if (myReview) {
-            return prev.map(r => r.id === myReview.id ? newReview : r)
-          }
-          return [newReview, ...prev]
-        })
+        setReviews(prev => [newReview, ...prev])
 
         setFilmData(prev => {
           if (!prev) return prev
           const currentVotes = prev.votes || 0
           const currentTotal = prev.rating * currentVotes
-          const previousRating = myReview?.rating ?? 0
-          const votesAfter = myReview ? currentVotes : currentVotes + 1
-          const totalAfter = myReview
-            ? currentTotal - previousRating + newRating
-            : currentTotal + newRating
+          const votesAfter = currentVotes + 1
+          const totalAfter = currentTotal + newRating
           const newAverageRating = votesAfter > 0 ? parseFloat((totalAfter / votesAfter).toFixed(1)) : 0
 
-          const prevHadText = (myReview?.text?.trim()?.length ?? 0) > 0
-          const reviewDelta = myReview
-            ? (hasReviewText ? 1 : 0) - (prevHadText ? 1 : 0)
-            : (hasReviewText ? 1 : 0)
+          const reviewDelta = hasReviewText ? 1 : 0
 
           return {
             ...prev,
@@ -362,7 +356,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
           }
         })
 
-        show({ message: myReview ? '리뷰가 수정되었습니다.' : '리뷰가 등록되었습니다.', kind: 'success' })
+        show({ message: '리뷰가 등록되었습니다.', kind: 'success' })
         setNewRating(0)
         setNewReviewText('')
         setHoveredRating(0)
@@ -385,12 +379,11 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
   const prepareReviewModal = () => {
     if (myReview) {
-      setNewRating(myReview.rating)
-      setNewReviewText(myReview.text)
-    } else {
-      setNewRating(0)
-      setNewReviewText('')
+      show({ message: '이미 작성한 리뷰는 수정할 수 없습니다.', kind: 'error' })
+      return
     }
+    setNewRating(0)
+    setNewReviewText('')
     setHoveredRating(0)
     setIsWriteDialogOpen(true)
   }
@@ -508,7 +501,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <h2 className="text-2xl font-bold text-foreground">리뷰 ({filmData.reviews})</h2>
                   <div className="flex gap-2 flex-wrap">
-                    {isAudience && (
+                    {canWriteReview && (
                       <WriteReviewModal
                         filmTitle={filmData.title}
                         isOpen={isWriteDialogOpen}
@@ -543,7 +536,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                     <p className="text-sm text-muted-foreground mb-4">
                       첫 리뷰어가 되어 의견을 남겨주세요.
                     </p>
-                    {isAudience && (
+                    {canWriteReview && (
                       <div className="flex justify-center">
                         <Button onClick={() => setIsWriteDialogOpen(true)} className="px-5">
                           첫 리뷰 남기기
