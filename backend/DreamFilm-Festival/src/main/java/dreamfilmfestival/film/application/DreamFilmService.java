@@ -57,7 +57,13 @@ public class DreamFilmService {
 
     @Transactional(readOnly = true)
     public List<DreamFilm> getFilmsForAdmin() {
+        // 현재 진행 중인 영화제 ID 조회
+        var ongoingFestivalIds = filmFestivalRepository.findOngoingFestivals().stream()
+                .map(FilmFestival::getFestivalId)
+                .collect(java.util.stream.Collectors.toSet());
+        
         return dreamFilmRepository.findAll().stream()
+                .filter(film -> ongoingFestivalIds.contains(film.getFestivalId()))
                 .filter(film -> film.getStatus() == FilmStatus.WAITING_ADMIN_APPROVAL
                         || film.getStatus() == FilmStatus.SUBMITTED
                         || film.getStatus() == FilmStatus.REJECTED)
@@ -151,6 +157,15 @@ public class DreamFilmService {
     @Transactional(readOnly = true)
     public List<DreamFilmRepository.FilmRankingView> getFilmRankingFromView(int limit) {
         return dreamFilmRepository.findRankingFromView(limit);
+    }
+
+    // LIKE 쿼리 - 제목으로 영화 검색
+    @Transactional(readOnly = true)
+    public List<DreamFilm> searchFilmsByTitle(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return dreamFilmRepository.findByTitleContaining(keyword.trim());
     }
 
     private Long resolveFestivalId() {

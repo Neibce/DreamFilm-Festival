@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'https://dff-api.jun0.dev'
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://127.0.0.1:8085'
 
 export const resolveImageUrl = (path?: string | null) => {
   if (!path) return null
@@ -112,7 +112,8 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getJudgesProgress: () => request('/api/judges/progress'),
-  getUserActivityStats: () => request<{ activeUsers: number; engagedUsers: number; reviewOnlyUsers: number }>('/api/users/stats/activity'),
+  getFilmsWithJudgeStatus: () => request('/api/judges/films'),
+  getUserActivityStats: () => request<{ activeUsers: number; engagedUsers: number; inactiveUsers: number }>('/api/users/stats/activity'),
   getTopRatedFilms: (minRating: number = 0) => request<{ filmId: number; reviewCount: number; avgRating: number }[]>(`/api/reviews/films/top-rated?minRating=${minRating}`),
   // LEFT JOIN - 영화 + 감독 정보 조회
   getFilmsWithDirector: () => request('/api/films/with-director'),

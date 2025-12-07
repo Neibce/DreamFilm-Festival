@@ -3,6 +3,7 @@ package dreamfilmfestival.judge.presentation;
 import dreamfilmfestival.judge.application.JudgeQueryService;
 import dreamfilmfestival.judge.application.JudgeService;
 import dreamfilmfestival.judge.domain.Judge;
+import dreamfilmfestival.judge.presentation.dto.FilmWithJudgeStatusResponse;
 import dreamfilmfestival.judge.presentation.dto.JudgeProgressResponse;
 import dreamfilmfestival.judge.presentation.dto.JudgeResponse;
 import dreamfilmfestival.judge.presentation.dto.JudgeSubmitRequest;
@@ -20,6 +21,28 @@ import java.util.List;
 public class JudgeController {
     private final JudgeService judgeService;
     private final JudgeQueryService judgeQueryService;
+
+    // 심사위원용 영화 목록 조회 (심사 상태 포함)
+    @GetMapping("/films")
+    public ResponseEntity<List<FilmWithJudgeStatusResponse>> getFilmsWithJudgeStatus(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        
+        List<FilmWithJudgeStatusResponse> responses = judgeService.getFilmsWithJudgeStatus(userId).stream()
+                .map(f -> FilmWithJudgeStatusResponse.of(
+                        f.filmId(),
+                        f.title(),
+                        f.directorName(),
+                        f.genre(),
+                        f.imageUrl(),
+                        f.judged(),
+                        f.judgeScore() != null ? JudgeResponse.from(f.judgeScore()) : null
+                ))
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
 
     @GetMapping("/progress")
     public ResponseEntity<List<JudgeProgressResponse>> getProgress() {

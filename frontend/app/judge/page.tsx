@@ -66,10 +66,6 @@ export default function JudgePage() {
   const { show } = useToastStore()
   const { authorized, checking } = useRoleGuard('JUDGE')
 
-  // 권한 확인 전까지 UI/데이터 호출을 막아 조용히 처리
-  if (checking) return null
-  if (!authorized) return null
-
   useEffect(() => {
     if (!authorized) return
     const finalized = localStorage.getItem('festivalFinalized') === 'true'
@@ -118,22 +114,31 @@ export default function JudgePage() {
     if (!authorized) return
     let mounted = true
     setLoading(true)
-    api.getFilms()
+    api.getFilmsWithJudgeStatus()
       .then((res) => {
         if (!mounted) return
-        const mapped: JudgingFilm[] = (res as any[]).map((f) => ({
-          id: String(f.filmId),
-          title: f.title,
-          director: f.director?.username
-            ? f.director.username
-            : (f.directorName ? f.directorName : (f.directorId ? `감독 #${f.directorId}` : '감독 미상')),
-          genre: f.genre || '전체',
-          image: resolveImageUrl(f.imageUrl) || '/placeholder.svg',
-          dreamDescription: '',
-          status: '심사 대기',
-          scores: undefined,
-          review: ''
-        }))
+        const filmList = res as any[]
+        
+        const mapped: JudgingFilm[] = filmList.map((f) => {
+          const judgeScore = f.judgeScore
+          return {
+            id: String(f.filmId),
+            title: f.title,
+            director: f.directorName || '감독 미상',
+            genre: f.genre || '전체',
+            image: resolveImageUrl(f.imageUrl) || '/placeholder.svg',
+            dreamDescription: '',
+            status: f.status as '심사 대기' | '심사 완료',
+            scores: judgeScore ? {
+              creativity: judgeScore.creativity ?? 0,
+              execution: judgeScore.execution ?? 0,
+              emotional_impact: judgeScore.emotionalImpact ?? 0,
+              storytelling: judgeScore.storytelling ?? 0
+            } : undefined,
+            review: judgeScore?.comment ?? ''
+          }
+        })
+        
         setFilms(mapped)
         if (mapped.length > 0) {
           setSelectedFilmId(mapped[0].id)
@@ -207,12 +212,6 @@ export default function JudgePage() {
   }, [films, statusFilter])
 
   const selectedFilm = films.find(f => f.id === selectedFilmId)
-  const totalFilms = films.length
-  const pendingCount = films.filter(f => f.status === '심사 대기').length
-  const completedCount = films.filter(f => f.status === '심사 완료').length
-  const canSubmitScores =
-    selectedFilm &&
-    Object.values(currentScores).every(score => score > 0)
 
   useEffect(() => {
     if (filteredFilms.length === 0) {
@@ -238,6 +237,17 @@ export default function JudgePage() {
       }
     }
   }, [selectedFilm])
+
+  // 권한 확인 전까지 UI/데이터 호출을 막아 조용히 처리
+  if (checking) return null
+  if (!authorized) return null
+
+  const totalFilms = films.length
+  const pendingCount = films.filter(f => f.status === '심사 대기').length
+  const completedCount = films.filter(f => f.status === '심사 완료').length
+  const canSubmitScores =
+    selectedFilm &&
+    Object.values(currentScores).every(score => score > 0)
 
   const handleScoreChange = (criterion: keyof FilmScore, score: number) => {
     setCurrentScores(prev => ({

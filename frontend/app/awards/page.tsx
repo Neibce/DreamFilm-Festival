@@ -117,6 +117,10 @@ export default function AwardsPage() {
                     return
                 }
 
+                // 심사위원 점수를 포함한 랭킹 데이터 조회
+                const rankingData = await api.getAwardRankings(selectedFestivalId, 5) as any[]
+                const rankingMap = new Map(rankingData.map((r: any) => [String(r.filmId), r]))
+
                 const rankingAwards = awards
                     .filter((a) => a.rank !== 4)
                     .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
@@ -125,6 +129,8 @@ export default function AwardsPage() {
 
                 const rankingWithDetail = await Promise.all(rankingAwards.map(async (a: any) => {
                     const detail = await api.getFilmDetail(a.filmId) as any
+                    const ranking = rankingMap.get(String(a.filmId))
+                    const judgeScore = ranking?.judgeAverage ?? 0
                     return {
                         id: String(a.filmId),
                         rank: a.rank ?? 0,
@@ -132,9 +138,9 @@ export default function AwardsPage() {
                         director: detail?.director?.username ?? detail?.directorName ?? '감독 정보 없음',
                         genre: detail?.genre ?? null,
                         image: resolveImageUrl(detail?.imageUrl),
-                        judgeAverageScore: detail?.averageRating ?? 0,
+                        judgeAverageScore: judgeScore,
                         likes: detail?.voteCount ?? 0,
-                        finalScore: (detail?.averageRating ?? 0) * 20,
+                        finalScore: judgeScore * 20,
                         dreamSummary: detail?.summary ?? detail?.dreamText ?? null,
                     } as AwardWinner
                 }))
@@ -203,15 +209,51 @@ export default function AwardsPage() {
 
                 {/* Hero Section */}
                 <section className="pt-20 pb-12 px-4 md:px-6 lg:px-8 border-b border-border bg-gradient-to-b from-primary/5 to-background">
-                    <div className="max-w-7xl mx-auto text-center space-y-4">
-                        <div className="mx-auto w-16 h-16">
-                            <SkeletonBlock className="w-full h-full rounded-full" />
+                    <div className="max-w-7xl mx-auto text-center">
+                        <div className="flex justify-center mb-6">
+                            <Crown className="w-16 h-16 text-yellow-500" />
                         </div>
-                        <SkeletonBlock className="mx-auto h-10 w-64" />
-                        <SkeletonBlock className="mx-auto h-6 w-48" />
-                        <div className="mx-auto space-y-2 max-w-xl">
-                            <SkeletonBlock className="h-4 w-full" />
-                            <SkeletonBlock className="h-4 w-3/4 mx-auto" />
+                        <h1 className="font-clipartkorea text-4xl md:text-6xl font-extrabold text-foreground mb-4">
+                            {festivalsLoading ? (
+                                <SkeletonBlock className="h-10 w-64 mx-auto" />
+                            ) : (
+                                festivalTitle
+                            )}
+                        </h1>
+                        <h2 className="text-2xl md:text-3xl font-bold mb-6">
+                            수상작 발표
+                        </h2>
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                            심사위원 평가와 관객 투표 수를 종합하여 선정된 최종 수상작을 공개합니다.
+                        </p>
+                    </div>
+                </section>
+
+                {/* Festival Selector Skeleton */}
+                <section className="px-4 md:px-6 lg:px-8 border-b border-border bg-background">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex flex-wrap gap-2 overflow-x-auto py-4">
+                            {festivalsLoading ? (
+                                Array.from({ length: 3 }).map((_, idx) => (
+                                    <div key={idx} className="h-10 w-24 rounded-lg bg-muted animate-pulse" />
+                                ))
+                            ) : festivals.length > 0 ? (
+                                festivals.map((fest) => (
+                                    <button
+                                        key={fest.id}
+                                        onClick={() => setSelectedFestivalId(fest.id)}
+                                        className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${
+                                            fest.id === selectedFestivalId
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-card text-foreground hover:bg-border'
+                                        }`}
+                                    >
+                                        {fest.name}
+                                    </button>
+                                ))
+                            ) : (
+                                <span className="text-sm text-muted-foreground">등록된 영화제가 없습니다.</span>
+                            )}
                         </div>
                     </div>
                 </section>

@@ -125,7 +125,7 @@ public class DreamFilmController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String genre
     ) {
-        String normalizedSearch = search != null ? search.trim().toLowerCase() : "";
+        String normalizedSearch = search != null ? search.trim() : "";
         String normalizedGenre = genre != null ? genre.trim() : "";
 
         List<FilmFestival> ongoingFestivals = filmFestivalService.getOngoingFestivals();
@@ -137,9 +137,20 @@ public class DreamFilmController {
                 .map(FilmFestival::getFestivalId)
                 .toList();
 
-        List<DreamFilm> films = festivalIds.stream()
-                .flatMap(id -> dreamFilmService.getSubmittedFilmsByFestival(id).stream())
-                .toList();
+        // LIKE 쿼리를 사용한 검색 (검색어가 있는 경우)
+        List<DreamFilm> films;
+        if (!normalizedSearch.isBlank()) {
+            // DB에서 LIKE 쿼리로 제목 검색
+            films = dreamFilmService.searchFilmsByTitle(normalizedSearch).stream()
+                    .filter(film -> festivalIds.contains(film.getFestivalId()))
+                    .filter(film -> film.getStatus() == dreamfilmfestival.film.domain.FilmStatus.SUBMITTED)
+                    .toList();
+        } else {
+            // 검색어가 없으면 모든 영화 조회
+            films = festivalIds.stream()
+                    .flatMap(id -> dreamFilmService.getSubmittedFilmsByFestival(id).stream())
+                    .toList();
+        }
 
         List<DirectorSummaryResponse> directors = films.stream()
                 .map(f -> dreamFilmService.getDirector(f.getDirectorId())
@@ -155,9 +166,9 @@ public class DreamFilmController {
                         (existing, ignored) -> existing
                 ));
 
+        // 장르 필터링만 Java에서 수행
         List<DreamFilm> filteredFilms = films.stream()
                 .filter(film -> matchesGenre(film, normalizedGenre))
-                .filter(film -> matchesSearch(film, directorMap.get(film.getDirectorId()), normalizedSearch))
                 .toList();
 
         List<DirectorSummaryResponse> filteredDirectors = filteredFilms.stream()
@@ -293,17 +304,6 @@ public class DreamFilmController {
         }
         String filmGenre = film.getGenre() != null ? film.getGenre() : "";
         return filmGenre.equalsIgnoreCase(genre);
-    }
-
-    private boolean matchesSearch(DreamFilm film, DirectorSummaryResponse director, String searchKeyword) {
-        if (searchKeyword == null || searchKeyword.isBlank()) {
-            return true;
-        }
-        String title = film.getTitle() != null ? film.getTitle().toLowerCase() : "";
-        String directorName = (director != null && director.username() != null)
-                ? director.username().toLowerCase()
-                : "";
-        return title.contains(searchKeyword) || directorName.contains(searchKeyword);
     }
 
     // LEFT JOIN API - 영화 + 감독 정보 조회

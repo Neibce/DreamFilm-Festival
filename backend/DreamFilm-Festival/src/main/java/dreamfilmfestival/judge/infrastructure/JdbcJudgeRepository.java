@@ -49,6 +49,31 @@ public class JdbcJudgeRepository implements JudgeRepository {
     }
 
     @Override
+    public List<Judge> findByUserId(Long userId) {
+        String sql = """
+            SELECT judge_id, film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at
+            FROM judge
+            WHERE user_id = ?
+            ORDER BY judged_at DESC
+            """;
+
+        return jdbcClient.sql(sql)
+                .param(userId)
+                .query((rs, rowNum) -> Judge.builder()
+                        .judgeId(rs.getLong("judge_id"))
+                        .filmId(rs.getLong("film_id"))
+                        .userId(rs.getLong("user_id"))
+                        .creativity(getNullableInt(rs, "creativity"))
+                        .execution(getNullableInt(rs, "execution"))
+                        .emotionalImpact(getNullableInt(rs, "emotional_impact"))
+                        .storytelling(getNullableInt(rs, "storytelling"))
+                        .comment(rs.getString("comment"))
+                        .judgedAt(rs.getTimestamp("judged_at").toLocalDateTime())
+                        .build())
+                .list();
+    }
+
+    @Override
     public Optional<Judge> findByFilmIdAndUserId(Long filmId, Long userId) {
         String sql = """
             SELECT judge_id, film_id, user_id, creativity, execution, emotional_impact, storytelling, comment, judged_at
