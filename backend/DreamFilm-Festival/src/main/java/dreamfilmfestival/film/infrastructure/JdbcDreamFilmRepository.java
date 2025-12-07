@@ -232,20 +232,22 @@ public class JdbcDreamFilmRepository implements DreamFilmRepository {
         jdbcClient.sql(sql).param(filmId).update();
     }
 
-    // LIKE 쿼리 - 제목으로 영화 검색
+    // LIKE 쿼리 - 제목 또는 감독 이름으로 영화 검색
     @Override
-    public List<DreamFilm> findByTitleContaining(String keyword) {
+    public List<DreamFilm> findByTitleOrDirectorContaining(String keyword) {
         String sql = """
-            SELECT film_id, festival_id, director_id, title, dream_text,
-                   ai_script, summary, genre, created_at, status, image_url
-            FROM dream_film
-            WHERE LOWER(title) LIKE LOWER(?)
-            ORDER BY created_at DESC
+            SELECT f.film_id, f.festival_id, f.director_id, f.title, f.dream_text,
+                   f.ai_script, f.summary, f.genre, f.created_at, f.status, f.image_url
+            FROM dream_film f
+            LEFT JOIN "user" u ON f.director_id = u.user_id
+            WHERE LOWER(f.title) LIKE LOWER(?) OR LOWER(u.username) LIKE LOWER(?)
+            ORDER BY f.created_at DESC
             """;
 
         String likePattern = "%" + keyword + "%";
         
         return jdbcClient.sql(sql)
+                .param(likePattern)
                 .param(likePattern)
                 .query((rs, rowNum) -> DreamFilm.builder()
                         .filmId(rs.getLong("film_id"))

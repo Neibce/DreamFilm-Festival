@@ -12,8 +12,8 @@ public interface DreamFilmRepository {
     List<DreamFilm> findByStatus(FilmStatus status);
     void deleteById(Long filmId);
     
-    // LIKE 쿼리 - 제목으로 영화 검색
-    List<DreamFilm> findByTitleContaining(String keyword);
+    // LIKE 쿼리 - 제목 또는 감독 이름으로 영화 검색
+    List<DreamFilm> findByTitleOrDirectorContaining(String keyword);
 
     // LEFT JOIN - 영화 + 감독 정보 조회
     List<FilmWithDirector> findAllWithDirector();
