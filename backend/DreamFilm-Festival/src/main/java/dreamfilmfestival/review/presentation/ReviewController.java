@@ -67,6 +67,23 @@ public class ReviewController {
         return ResponseEntity.ok(responses);
     }
 
+    // GROUP BY + HAVING + SUM/MAX/MIN - 평균 평점 N점 이상인 영화 목록
+    @GetMapping("/films/top-rated")
+    public ResponseEntity<List<FilmRatingResponse>> getTopRatedFilms(
+            @RequestParam(name = "minRating", required = false, defaultValue = "0") double minRating
+    ) {
+        var stats = reviewService.getFilmsWithMinAvgRating(minRating);
+        var responses = stats.stream()
+                .map(s -> new FilmRatingResponse(s.filmId(), s.reviewCount(), s.avgRating(),
+                        s.maxRating(), s.minRating(), s.ratingSum()))
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    // SUM, MAX, MIN 포함
+    public record FilmRatingResponse(Long filmId, int reviewCount, double avgRating,
+                                     int maxRating, int minRating, long ratingSum) {}
+
     private ReviewResponse toResponse(Review review) {
         String username = null;
         String role = null;

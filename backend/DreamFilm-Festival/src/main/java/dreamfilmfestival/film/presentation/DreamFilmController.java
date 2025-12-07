@@ -80,21 +80,35 @@ public class DreamFilmController {
     }
 
     @GetMapping("/admin")
-    public ResponseEntity<List<FilmListResponse>> getFilmsForAdmin(HttpSession session) {
+    public ResponseEntity<List<FilmDetailResponse>> getFilmsForAdmin(HttpSession session) {
         UserRole role = (UserRole) session.getAttribute("userRole");
         if (role != UserRole.ADMIN) {
             throw new IllegalStateException("관리자만 조회할 수 있습니다.");
         }
 
         List<DreamFilm> films = dreamFilmService.getFilmsForAdmin();
-        List<DirectorSummaryResponse> directors = films.stream()
-                .map(f -> dreamFilmService.getDirector(f.getDirectorId())
-                        .map(d -> DirectorSummaryResponse.from(d.getUserId(), d.getUsername(), d.getEmail(), d.getRole().name()))
-                        .orElse(null))
-                .collect(Collectors.toList());
         Map<Long, FilmStats> statsByFilmId = films.stream()
                 .collect(Collectors.toMap(DreamFilm::getFilmId, film -> filmQueryService.getFilmStats(film.getFilmId())));
-        List<FilmListResponse> response = filmDtoMapper.toFilmListResponseList(films, directors, statsByFilmId);
+
+        List<FilmDetailResponse> response = films.stream()
+                .map(film -> {
+                    var director = dreamFilmService.getDirector(film.getDirectorId());
+                    String directorName = director.map(d -> d.getUsername()).orElse(null);
+                    DirectorSummaryResponse directorSummary = director
+                            .map(d -> DirectorSummaryResponse.from(d.getUserId(), d.getUsername(), d.getEmail(), d.getRole().name()))
+                            .orElse(null);
+                    FilmStats stats = statsByFilmId.getOrDefault(film.getFilmId(), new FilmStats(0, 0, 0.0));
+                    return FilmDetailResponse.of(
+                            film,
+                            directorName,
+                            directorSummary,
+                            stats.voteCount(),
+                            stats.reviewCount(),
+                            stats.averageRating()
+                    );
+                })
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(response);
     }
 
@@ -195,7 +209,17 @@ public class DreamFilmController {
             HttpSession session
     ) {
         Long userId = (Long) session.getAttribute("userId");
+        UserRole userRole = (UserRole) session.getAttribute("userRole");
+        if (userId == null || userRole == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+
         DreamFilm film = dreamFilmService.approveByDirector(filmId, userId);
+
+        // 관객이 승인 시 세션 역할도 감독으로 승격
+        if (userRole == UserRole.AUDIENCE) {
+            session.setAttribute("userRole", UserRole.DIRECTOR);
+        }
         return ResponseEntity.ok(toDetailResponse(film));
     }
 
@@ -281,6 +305,59 @@ public class DreamFilmController {
                 : "";
         return title.contains(searchKeyword) || directorName.contains(searchKeyword);
     }
+
+    // LEFT JOIN API - 영화 + 감독 정보 조회
+    @GetMapping("/with-director")
+    public ResponseEntity<List<FilmWithDirectorResponse>> getFilmsWithDirector() {
+        var films = dreamFilmService.getFilmsWithDirector();
+        var responses = films.stream()
+                .map(f -> new FilmWithDirectorResponse(
+                        f.filmId(), f.title(), f.genre(), f.status(), f.imageUrl(),
+                        f.createdAt().toString(), f.directorName(), f.directorEmail()
+                ))
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    // View API - 영화 상세 정보 조회 (v_film_details)
+    @GetMapping("/{filmId}/view-details")
+    public ResponseEntity<FilmDetailsViewResponse> getFilmDetailsFromView(@PathVariable Long filmId) {
+        return dreamFilmService.getFilmDetailsFromView(filmId)
+                .map(v -> new FilmDetailsViewResponse(
+                        v.filmId(), v.title(), v.genre(), v.status(), v.imageUrl(),
+                        v.directorName(), v.voteCount(), v.avgRating()
+                ))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // View API - 영화 랭킹 조회 (v_film_ranking)
+    @GetMapping("/ranking")
+    public ResponseEntity<List<FilmRankingViewResponse>> getFilmRanking(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        var ranking = dreamFilmService.getFilmRankingFromView(limit);
+        var responses = ranking.stream()
+                .map(r -> new FilmRankingViewResponse(
+                        r.filmId(), r.title(), r.genre(), r.judgeScore(), r.voteCount()
+                ))
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    public record FilmWithDirectorResponse(
+            Long filmId, String title, String genre, String status, String imageUrl,
+            String createdAt, String directorName, String directorEmail
+    ) {}
+
+    public record FilmDetailsViewResponse(
+            Long filmId, String title, String genre, String status, String imageUrl,
+            String directorName, int voteCount, double avgRating
+    ) {}
+
+    public record FilmRankingViewResponse(
+            Long filmId, String title, String genre, double judgeScore, int voteCount
+    ) {}
 }
 
 

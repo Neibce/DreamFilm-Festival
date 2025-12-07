@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,24 +19,8 @@ public class AwardService {
     private final AwardRepository awardRepository;
     private final AwardQueryService awardQueryService;
 
-    public Award createAward(Award award) {
-        return awardRepository.save(award);
-    }
-
-    public Optional<Award> getAwardById(Long awardId) {
-        return awardRepository.findById(awardId);
-    }
-
-    public List<Award> getAwardsByFilmId(Long filmId) {
-        return awardRepository.findByFilmId(filmId);
-    }
-
     public List<Award> getAwardsByFestivalId(Long festivalId) {
         return awardRepository.findByFestivalId(festivalId);
-    }
-
-    public void deleteAward(Long awardId) {
-        awardRepository.deleteById(awardId);
     }
 
     @Transactional
@@ -64,15 +47,26 @@ public class AwardService {
 
         List<Award> saved = new ArrayList<>();
 
-        for (AwardRankingResponse ranking : rankings) {
-            Award award = Award.builder()
-                    .filmId(ranking.filmId())
-                    .festivalId(festivalId)
-                    .rank(ranking.rank())
-                    .awardName(null)
-                    .announcedAt(null)
-                    .build();
-            saved.add(awardRepository.save(award));
+        for (int i = 0; i < rankings.size(); i++) {
+            AwardRankingResponse ranking = rankings.get(i);
+            
+            if (i == 0) {
+                // 첫 번째 Award는 SQL Transaction (BEGIN/COMMIT/ROLLBACK) 사용
+                awardRepository.finalizeAwardWithTransaction(ranking.filmId(), festivalId, ranking.rank());
+                saved.add(awardRepository.findByFestivalId(festivalId).stream()
+                        .filter(a -> a.getFilmId().equals(ranking.filmId()))
+                        .findFirst()
+                        .orElse(null));
+            } else {
+                Award award = Award.builder()
+                        .filmId(ranking.filmId())
+                        .festivalId(festivalId)
+                        .rank(ranking.rank())
+                        .awardName(null)
+                        .announcedAt(null)
+                        .build();
+                saved.add(awardRepository.save(award));
+            }
         }
 
         if (popularityWinner.isPresent()) {
@@ -90,4 +84,3 @@ public class AwardService {
         return saved;
     }
 }
-

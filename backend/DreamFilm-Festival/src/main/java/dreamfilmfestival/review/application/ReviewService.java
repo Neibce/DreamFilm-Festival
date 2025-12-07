@@ -28,5 +28,10 @@ public class ReviewService {
     public Review saveReview(Review review) {
         return reviewRepository.save(review);
     }
+
+    // GROUP BY + HAVING - 평균 평점 N점 이상인 영화 목록
+    public List<ReviewRepository.FilmRatingStats> getFilmsWithMinAvgRating(double minRating) {
+        return reviewRepository.findFilmsWithMinAvgRating(minRating);
+    }
 }
 

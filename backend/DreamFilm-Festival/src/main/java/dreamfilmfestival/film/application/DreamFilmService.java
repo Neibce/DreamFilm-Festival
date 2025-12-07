@@ -8,6 +8,8 @@ import dreamfilmfestival.film.domain.event.FilmCreatedEvent;
 import dreamfilmfestival.festival.domain.FilmFestival;
 import dreamfilmfestival.festival.domain.FilmFestivalRepository;
 import dreamfilmfestival.user.domain.User;
+import dreamfilmfestival.user.domain.UserRole;
+import dreamfilmfestival.user.application.UserService;
 import dreamfilmfestival.user.domain.UserRepository;
 import dreamfilmfestival.user.domain.UserRole;
 import dreamfilmfestival.user.application.UserService;
@@ -133,6 +135,24 @@ public class DreamFilmService {
     public Optional<User> getDirector(Long directorId) {
         if (directorId == null) return Optional.empty();
         return userRepository.findById(directorId);
+    }
+
+    // LEFT JOIN - 영화 + 감독 정보 조회
+    @Transactional(readOnly = true)
+    public List<DreamFilmRepository.FilmWithDirector> getFilmsWithDirector() {
+        return dreamFilmRepository.findAllWithDirector();
+    }
+
+    // View 활용 - 영화 상세 정보 조회 (v_film_details)
+    @Transactional(readOnly = true)
+    public Optional<DreamFilmRepository.FilmDetailsView> getFilmDetailsFromView(Long filmId) {
+        return dreamFilmRepository.findFilmDetailsFromView(filmId);
+    }
+
+    // View 활용 - 영화 랭킹 조회 (v_film_ranking)
+    @Transactional(readOnly = true)
+    public List<DreamFilmRepository.FilmRankingView> getFilmRankingFromView(int limit) {
+        return dreamFilmRepository.findRankingFromView(limit);
     }
 
     private Long resolveFestivalId() {

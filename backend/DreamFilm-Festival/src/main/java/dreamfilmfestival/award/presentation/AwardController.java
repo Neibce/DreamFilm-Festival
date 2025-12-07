@@ -1,7 +1,6 @@
 package dreamfilmfestival.award.presentation;
 
 import dreamfilmfestival.award.application.AwardService;
-import dreamfilmfestival.award.domain.Award;
 import dreamfilmfestival.award.presentation.dto.AwardResponse;
 import dreamfilmfestival.award.presentation.dto.AwardRankingResponse;
 import dreamfilmfestival.award.presentation.dto.AwardPopularityResponse;
@@ -19,29 +18,6 @@ import java.util.List;
 public class AwardController {
     private final AwardService awardService;
     private final AwardQueryService awardQueryService;
-
-    @PostMapping
-    public ResponseEntity<AwardResponse> createAward(@RequestBody Award award) {
-        Award createdAward = awardService.createAward(award);
-        return ResponseEntity.status(HttpStatus.CREATED).body(AwardResponse.from(createdAward));
-    }
-
-    @GetMapping("/{awardId}")
-    public ResponseEntity<AwardResponse> getAwardById(@PathVariable Long awardId) {
-        return awardService.getAwardById(awardId)
-                .map(AwardResponse::from)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/film/{filmId}")
-    public ResponseEntity<List<AwardResponse>> getAwardsByFilmId(@PathVariable Long filmId) {
-        List<AwardResponse> awards = awardService.getAwardsByFilmId(filmId)
-                .stream()
-                .map(AwardResponse::from)
-                .toList();
-        return ResponseEntity.ok(awards);
-    }
 
     @GetMapping("/festival/{festivalId}")
     public ResponseEntity<List<AwardResponse>> getAwardsByFestivalId(@PathVariable Long festivalId) {
@@ -74,11 +50,4 @@ public class AwardController {
                 .toList();
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
-
-    @DeleteMapping("/{awardId}")
-    public ResponseEntity<Void> deleteAward(@PathVariable Long awardId) {
-        awardService.deleteAward(awardId);
-        return ResponseEntity.noContent().build();
-    }
 }
-

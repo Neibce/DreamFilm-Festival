@@ -5,10 +5,12 @@ import java.util.Optional;
 
 public interface ReviewRepository {
     Review save(Review review);
-    Optional<Review> findById(Long reviewId);
     List<Review> findByFilmId(Long filmId, String sort);
-    List<Review> findByUserId(Long userId);
     Optional<Review> findByFilmIdAndUserId(Long filmId, Long userId);
-    void deleteById(Long reviewId);
+    List<FilmRatingStats> findFilmsWithMinAvgRating(double minRating);
+
+    // SUM, MAX, MIN 추가
+    record FilmRatingStats(Long filmId, int reviewCount, double avgRating, 
+                          int maxRating, int minRating, long ratingSum) {}
 }
 

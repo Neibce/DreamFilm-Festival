@@ -23,43 +23,6 @@ public class JdbcVoteRepository implements VoteRepository {
     }
 
     @Override
-    public Optional<Vote> findById(Long voteId) {
-        String sql = """
-            SELECT vote_id, film_id, user_id
-            FROM vote
-            WHERE vote_id = ?
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(voteId)
-                .query((rs, rowNum) -> Vote.builder()
-                        .voteId(rs.getLong("vote_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .build())
-                .optional();
-    }
-
-    @Override
-    public List<Vote> findByFilmId(Long filmId) {
-        String sql = """
-            SELECT vote_id, film_id, user_id
-            FROM vote
-            WHERE film_id = ?
-            ORDER BY vote_id DESC
-            """;
-
-        return jdbcClient.sql(sql)
-                .param(filmId)
-                .query((rs, rowNum) -> Vote.builder()
-                        .voteId(rs.getLong("vote_id"))
-                        .filmId(rs.getLong("film_id"))
-                        .userId(rs.getLong("user_id"))
-                        .build())
-                .list();
-    }
-
-    @Override
     public List<Vote> findByUserId(Long userId) {
         String sql = """
             SELECT vote_id, film_id, user_id
@@ -118,12 +81,6 @@ public class JdbcVoteRepository implements VoteRepository {
     }
 
     @Override
-    public void deleteById(Long voteId) {
-        String sql = "DELETE FROM vote WHERE vote_id = ?";
-        jdbcClient.sql(sql).param(voteId).update();
-    }
-
-    @Override
     public void deleteByUserIdAndFilmId(Long userId, Long filmId) {
         String sql = "DELETE FROM vote WHERE user_id = ? AND film_id = ?";
         jdbcClient.sql(sql)
@@ -168,5 +125,22 @@ public class JdbcVoteRepository implements VoteRepository {
 
         return vote;
     }
-}
 
+    // EXISTS Subquery - 투표 여부 확인
+    @Override
+    public boolean existsByUserAndFilm(Long userId, Long filmId) {
+        String sql = """
+            SELECT EXISTS(
+                SELECT 1 FROM vote WHERE user_id = ? AND film_id = ?
+            ) AS vote_exists
+            """;
+
+        Boolean result = jdbcClient.sql(sql)
+                .param(userId)
+                .param(filmId)
+                .query(Boolean.class)
+                .single();
+
+        return result != null && result;
+    }
+}

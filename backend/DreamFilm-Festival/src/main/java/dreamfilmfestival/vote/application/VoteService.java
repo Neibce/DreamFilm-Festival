@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,14 +17,14 @@ public class VoteService {
             throw new IllegalStateException("로그인이 필요합니다.");
         }
 
-        var userVotes = voteRepository.findByUserId(userId);
-        if (userVotes.size() >= 3) {
+        // COUNT로 투표 수 체크
+        int voteCount = voteRepository.countByUserId(userId);
+        if (voteCount >= 3) {
             throw new IllegalStateException("사용자당 최대 3개 작품만 투표할 수 있습니다.");
         }
 
-        boolean alreadyVoted = userVotes.stream()
-                .anyMatch(v -> v.getFilmId().equals(filmId));
-        if (alreadyVoted) {
+        // EXISTS Subquery로 중복 투표 체크
+        if (voteRepository.existsByUserAndFilm(userId, filmId)) {
             throw new IllegalArgumentException("이미 해당 작품에 투표했습니다.");
         }
 
@@ -35,14 +34,6 @@ public class VoteService {
                 .build();
 
         return voteRepository.save(vote);
-    }
-
-    public Optional<Vote> getVoteById(Long voteId) {
-        return voteRepository.findById(voteId);
-    }
-
-    public List<Vote> getVotesByFilmId(Long filmId) {
-        return voteRepository.findByFilmId(filmId);
     }
 
     public List<Vote> getVotesByUserId(Long userId) {
@@ -62,13 +53,6 @@ public class VoteService {
         return Math.max(remaining, 0);
     }
 
-    public boolean hasUserVotedForFilm(Long userId, Long filmId) {
-        if (userId == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        return voteRepository.findByUserIdAndFilmId(userId, filmId).isPresent();
-    }
-
     public int countVotesByFilmId(Long filmId) {
         return voteRepository.countByFilmId(filmId);
     }
@@ -85,9 +69,4 @@ public class VoteService {
 
         voteRepository.deleteByUserIdAndFilmId(userId, filmId);
     }
-
-    public void deleteVote(Long voteId) {
-        voteRepository.deleteById(voteId);
-    }
 }
-
