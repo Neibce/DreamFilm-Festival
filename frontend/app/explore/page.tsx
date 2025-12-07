@@ -212,11 +212,13 @@ export default function ExplorePage() {
           <p className="text-lg text-muted-foreground mb-2 text-balance">
             실제 꿈에서 탄생한 독창적인 작품들을 감상하고, 평가하여 영화제 수상작 선정에 기여해보세요.
           </p>
-          <div className="flex items-center gap-2 mb-8">
-            <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 mt-3 px-3 py-1">
-              <Heart className="w-3.5 h-3.5 mr-1.5" />
-              남은 투표: {remainingVotes}/{VOTE_LIMIT}
-            </Badge>
+          <div className="flex items-center gap-2 mb-4">
+            {isAudience && (
+              <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 mt-3 px-3 py-1">
+                <Heart className="w-3.5 h-3.5 mr-1.5" />
+                남은 투표: {remainingVotes}/{VOTE_LIMIT}
+              </Badge>
+            )}
           </div>
 
           {/* Search and Filter */}
