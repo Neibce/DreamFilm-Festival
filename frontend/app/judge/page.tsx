@@ -172,7 +172,7 @@ export default function JudgePage() {
 
         setFilms(prev => prev.map(film => film.id === selectedFilmId ? {
           ...film,
-          dreamDescription: filmDetail?.dreamText || '소개가 없습니다.',
+          dreamDescription: filmDetail?.aiScript || filmDetail?.dreamText || '소개가 없습니다.',
           scores: myScore ? {
             creativity: myScore.creativity ?? 0,
             execution: myScore.execution ?? 0,
