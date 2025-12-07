@@ -140,8 +140,8 @@ public class DreamFilmController {
         // LIKE 쿼리를 사용한 검색 (검색어가 있는 경우)
         List<DreamFilm> films;
         if (!normalizedSearch.isBlank()) {
-            // DB에서 LIKE 쿼리로 제목 검색
-            films = dreamFilmService.searchFilmsByTitle(normalizedSearch).stream()
+            // DB에서 LIKE 쿼리로 제목 또는 감독 이름 검색
+            films = dreamFilmService.searchFilms(normalizedSearch).stream()
                     .filter(film -> festivalIds.contains(film.getFestivalId()))
                     .filter(film -> film.getStatus() == dreamfilmfestival.film.domain.FilmStatus.SUBMITTED)
                     .toList();

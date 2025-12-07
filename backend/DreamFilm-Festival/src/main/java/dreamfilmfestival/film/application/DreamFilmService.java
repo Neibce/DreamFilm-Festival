@@ -161,13 +161,13 @@ public class DreamFilmService {
         return dreamFilmRepository.findRankingFromView(limit);
     }
 
-    // LIKE 쿼리 - 제목으로 영화 검색
+    // LIKE 쿼리 - 제목 또는 감독 이름으로 영화 검색
     @Transactional(readOnly = true)
-    public List<DreamFilm> searchFilmsByTitle(String keyword) {
+    public List<DreamFilm> searchFilms(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return List.of();
         }
-        return dreamFilmRepository.findByTitleContaining(keyword.trim());
+        return dreamFilmRepository.findByTitleOrDirectorContaining(keyword.trim());
     }
 
     private Long resolveFestivalId() {

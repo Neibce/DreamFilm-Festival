@@ -96,20 +96,13 @@ public class JdbcAwardRepository implements AwardRepository {
     public void finalizeAwardWithTransaction(Long filmId, Long festivalId, int rank) {
         jdbcClient.sql("BEGIN").update();
         try {
-            // 1. 시상 정보 삽입
+            // 시상 정보 삽입
             jdbcClient.sql("""
                 INSERT INTO award (film_id, festival_id, rank) VALUES (?, ?, ?)
                 """)
                 .param(filmId)
                 .param(festivalId)
                 .param(rank)
-                .update();
-
-            // 2. 영화 상태를 'AWARDED'로 변경
-            jdbcClient.sql("""
-                UPDATE dream_film SET status = 'AWARDED' WHERE film_id = ?
-                """)
-                .param(filmId)
                 .update();
 
             // 모든 작업 성공 시 커밋

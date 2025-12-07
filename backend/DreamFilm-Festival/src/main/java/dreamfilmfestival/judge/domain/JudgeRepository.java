@@ -8,6 +8,7 @@ public interface JudgeRepository {
     List<Judge> findByFilmId(Long filmId);
     List<Judge> findByUserId(Long userId);
     Optional<Judge> findByFilmIdAndUserId(Long filmId, Long userId);
+    boolean existsByFilmIdAndUserId(Long filmId, Long userId);
     List<Judge> findBySubmittedFilms();
 }
 
