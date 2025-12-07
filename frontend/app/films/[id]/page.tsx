@@ -39,7 +39,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
   const [loadingVotes, setLoadingVotes] = useState(true)
 
   const [filmData, setFilmData] = useState<Film | null>(null)
-  const [currentUser, setCurrentUser] = useState<{ id?: string; username?: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id?: string; username?: string; role?: string } | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [submittingReview, setSubmittingReview] = useState(false)
@@ -167,7 +167,8 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
         if (me && (me.id || me.userId || me.username)) {
           setCurrentUser({
             id: me.id ? String(me.id) : (me.userId ? String(me.userId) : undefined),
-            username: me.username
+            username: me.username,
+            role: me.role
           })
         } else {
           setCurrentUser(null)
@@ -225,6 +226,8 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
 
   const sortedReviews = reviews
 
+  const isAudience = (currentUser?.role || '').toUpperCase() === 'AUDIENCE'
+
   const myReview = useMemo(() => {
     if (!currentUser) return null
     return reviews.find((r) =>
@@ -234,7 +237,7 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
   }, [reviews, currentUser])
 
   const toggleLike = () => {
-    if (!filmData || loadingVotes) return
+    if (!filmData || loadingVotes || !isAudience) return
     const filmId = filmData.id
 
     // 이미 투표했다면 취소 처리
@@ -505,21 +508,23 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <h2 className="text-2xl font-bold text-foreground">리뷰 ({filmData.reviews})</h2>
                   <div className="flex gap-2 flex-wrap">
-                    <WriteReviewModal
-                      filmTitle={filmData.title}
-                      isOpen={isWriteDialogOpen}
-                      onOpenChange={setIsWriteDialogOpen}
-                      onPrepareOpen={prepareReviewModal}
-                      mode={myReview ? 'edit' : 'create'}
-                      rating={newRating}
-                      hoveredRating={hoveredRating}
-                      reviewText={newReviewText}
-                      onRatingChange={setNewRating}
-                      onHoveredRatingChange={setHoveredRating}
-                      onReviewTextChange={setNewReviewText}
-                      onSubmit={handleSubmitReview}
-                      onCancel={handleCancelReview}
-                    />
+                    {isAudience && (
+                      <WriteReviewModal
+                        filmTitle={filmData.title}
+                        isOpen={isWriteDialogOpen}
+                        onOpenChange={setIsWriteDialogOpen}
+                        onPrepareOpen={prepareReviewModal}
+                        mode={myReview ? 'edit' : 'create'}
+                        rating={newRating}
+                        hoveredRating={hoveredRating}
+                        reviewText={newReviewText}
+                        onRatingChange={setNewRating}
+                        onHoveredRatingChange={setHoveredRating}
+                        onReviewTextChange={setNewReviewText}
+                        onSubmit={handleSubmitReview}
+                        onCancel={handleCancelReview}
+                      />
+                    )}
                     <AllReviewsModal
                       filmTitle={filmData.title}
                       reviews={sortedReviews}
@@ -538,11 +543,13 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                     <p className="text-sm text-muted-foreground mb-4">
                       첫 리뷰어가 되어 의견을 남겨주세요.
                     </p>
-                    <div className="flex justify-center">
-                      <Button onClick={() => setIsWriteDialogOpen(true)} className="px-5">
-                        첫 리뷰 남기기
-                      </Button>
-                    </div>
+                    {isAudience && (
+                      <div className="flex justify-center">
+                        <Button onClick={() => setIsWriteDialogOpen(true)} className="px-5">
+                          첫 리뷰 남기기
+                        </Button>
+                      </div>
+                    )}
                   </Card>
                 ) : (
                   sortedReviews.slice(0, 3).map((review) => (
@@ -570,29 +577,31 @@ export default function FilmDetailPage({ params }: { params: { id: string } }) {
                   </Link>
                 </div>
               </Card>
-              {/* Like Button Card */}
-              <Card className="p-6 bg-card border-border">
-                <div className="mb-3 text-center">
-                  <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 text-xs">
-                    남은 투표: {remainingVotes}/{VOTE_LIMIT}
-                  </Badge>
-                </div>
-                <Button
-                  onClick={toggleLike}
-                  className={`w-full h-14 text-lg font-semibold transition ${
-                    isLiked
-                      ? 'bg-pink-500 hover:bg-pink-600 text-white'
-                      : 'bg-card hover:bg-muted border-2 border-border hover:border-pink-500 text-foreground'
-                  }`}
-                >
-                  <Heart
-                    className={`w-6 h-6 mr-2 transition ${
-                      isLiked ? 'fill-white text-white' : 'text-foreground'
+              {/* Like Button Card (관객만 노출) */}
+              {isAudience && (
+                <Card className="p-6 bg-card border-border">
+                  <div className="mb-3 text-center">
+                    <Badge variant="outline" className="bg-pink-500/10 text-pink-500 border-pink-500/30 text-xs">
+                      남은 투표: {remainingVotes}/{VOTE_LIMIT}
+                    </Badge>
+                  </div>
+                  <Button
+                    onClick={toggleLike}
+                    className={`w-full h-14 text-lg font-semibold transition ${
+                      isLiked
+                        ? 'bg-pink-500 hover:bg-pink-600 text-white'
+                        : 'bg-card hover:bg-muted border-2 border-border hover:border-pink-500 text-foreground'
                     }`}
-                  />
-                  {isLiked ? '투표 완료!' : '투표하기'}
-                </Button>
-              </Card>
+                  >
+                    <Heart
+                      className={`w-6 h-6 mr-2 transition ${
+                        isLiked ? 'fill-white text-white' : 'text-foreground'
+                      }`}
+                    />
+                    {isLiked ? '투표 완료!' : '투표하기'}
+                  </Button>
+                </Card>
+              )}
             </div>
           </div>
           <RelatedFilms films={relatedFilms} />
