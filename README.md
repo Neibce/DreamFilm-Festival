@@ -53,31 +53,15 @@
 
 ## 아키텍처
 
-```
-Next.js 16 (Vercel)            Spring Boot 4 (Java 21)
-───────────────────            ─────────────────────────
-App Router              ─────▶ REST API (세션 기반 인증)
-Zustand (auth/toast)           ├─ domain (불변식, 상태 전이)
-Tailwind + Radix UI            ├─ application (@Async 이벤트)
-                               ├─ infrastructure (JDBC, AI)
-                               └─ presentation (Controller, DTO)
-                                         │
-                                         │ JdbcClient + HikariCP
-                                         ▼
-                               PostgreSQL
-                               ─ Role별 GRANT/REVOKE
-                               ─ View (랭킹, 상세)
-                               ─ 조회 패턴 기반 Index
+<img width="1525" height="913" alt="image" src="https://github.com/user-attachments/assets/3f5a3a8e-781f-4314-82a0-e0b5edfbff00" />
 
-외부 AI 연동 (비동기)
-  OpenAI GPT-5.1        → 시나리오/요약 생성 (WebClient + JSON Schema)
-  Google Gemini 3 Pro   → 포스터 이미지 생성 (google-genai SDK)
-```
-
-도메인은 전부 `domain / application / infrastructure / presentation` 4-layer로 통일했고, `film`, `user`, `festival`, `judge`, `vote`, `review`, `award` 각 패키지가 같은 구조를 따릅니다.
+## 스키마 다이어그램
+<img width="1525"  alt="image" src="https://github.com/user-attachments/assets/ec152f1b-8ff3-4c60-b23c-135a5c65a584" />
 
 
-## 백엔드 구현에서 신경썼던 부분
+
+
+## 백엔드 구현에서 신경 쓴 부분
 
 ### 1. AI 호출을 HTTP 요청 스레드에서 분리했습니다.
 
@@ -113,7 +97,7 @@ GRANT  SELECT (user_id, username, role, email, created_at)
 
 ### 4. JPA 없이 JdbcClient로 Repository 수동 구현
 
-통계·랭킹 쿼리가 많기도 했고, 데이터베이스 과목의 프로젝트이기에 ORM을 걷어내고 Spring JDBC의 `JdbcClient`로 Repository를 직접 구현했습니다. 또한, DB에 View와 Index를 적극적으로 뒀습니다.
+통계·랭킹 쿼리가 많기도 했고, 데이터베이스 과목의 프로젝트이기에 ORM 대신 Spring JDBC의 `JdbcClient`로 Repository를 직접 구현했습니다. 또한, DB에 View와 Index를 적극적으로 설정했습니다.
 
 ```sql
 CREATE VIEW v_film_ranking AS
@@ -133,7 +117,6 @@ GROUP BY f.film_id, ...;
 - 조회 패턴 기반 인덱스(`idx_film_status`, `idx_vote_film`, `idx_judge_film` 등)
 - 제목·감독명 부분 일치 `LIKE` 검색
 
----
 
 ## 디렉터리 구조
 
@@ -184,7 +167,6 @@ pnpm install
 NEXT_PUBLIC_API_BASE=http://localhost:8085 pnpm dev    # http://localhost:3000
 ```
 
----
 
 ## 팀 & 담당
 
